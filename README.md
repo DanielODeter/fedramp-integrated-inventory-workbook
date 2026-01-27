@@ -1,6 +1,73 @@
-# FedRAMP Integrated Inventory Workbook Generator
+# FedRAMP Integrated Inventory Workbook Generator - Enhanced
 
-## License
+> **Community-Maintained Fork**: This is an enhanced version of the [original AWS sample](https://github.com/aws-samples/fedramp-integrated-inventory-workbook) (now archived). Includes security fixes, Python 3.11 upgrade, and 17 additional AWS services.
+
+## What's New - January 2025
+
+### 🔒 Critical Security Fixes
+- Fixed CloudFormation YAML syntax errors in AssumeRolePolicyDocument (missing list indicator)
+- Fixed ARN parsing boundary check preventing IndexError
+- Fixed mutable default argument causing shared state between instances
+- Added S3 bucket encryption (AES256) for FedRAMP compliance
+- Fixed logger level configuration to properly handle string environment variables
+
+### ⚡ High Priority Fixes
+- **Upgraded Lambda runtime from Python 3.8 to Python 3.11** (3.8 deprecated)
+- Added environment variable validation for CROSS_ACCOUNT_ROLE_NAME
+- Fixed dictionary access safety checks throughout codebase
+- Fixed S3 public accessibility detection using publicAccessBlockConfiguration
+- Fixed API Gateway public/private endpoint detection
+- Fixed VPC configuration key capitalization (vpcOptions vs vPCOptions)
+- Fixed ElastiCache engine type detection from configuration
+- Fixed NetworkInterface public IP association detection
+- Fixed NAT Gateway to create separate entries for private and public IPs
+- Fixed file handle resource leak using context manager
+- Removed duplicate owner field write in reports
+
+### 🏗️ Infrastructure Improvements
+- Added CloudWatch Log Groups with 90-day retention policy
+- Added S3 lifecycle policies (7-year retention, 90-day noncurrent versions)
+- Removed hardcoded IAM role names for stack reusability
+- Fixed CloudFormation parameter validation (12-digit AWS account ID pattern)
+- Fixed Output to return ARN instead of role name
+- Removed obsolete DependsOn configurations
+- Made temp file paths portable across operating systems
+
+### 🚀 New AWS Service Support (8→25 resource types)
+
+**Compute Resources:**
+- AWS Lambda Functions
+- Amazon EKS Clusters
+- Amazon ECS Tasks & Services
+- Amazon EC2 Instances
+
+**Storage Resources:**
+- Amazon S3 Buckets
+- Amazon EFS File Systems
+
+**Database Resources:**
+- Amazon RDS (DB Instances & Clusters)
+- Amazon DynamoDB Tables
+- Amazon Redshift Clusters
+- Amazon ElastiCache (Redis & Memcached)
+- Amazon OpenSearch/Elasticsearch Domains
+
+**Network Resources:**
+- Elastic Load Balancers (Classic, ALB, NLB)
+- Amazon API Gateway (REST, HTTP, WebSocket)
+- Amazon CloudFront Distributions
+- NAT Gateways
+- Network Interfaces
+
+### 📊 Performance Optimizations
+- Replaced deep copy with shallow copy for dictionary operations
+- Fixed PEP8 violations (empty container checks, naming conventions)
+
+See [CHANGELOG.md](CHANGELOG.md) for complete details.
+
+---
+
+## Overview
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
 
@@ -17,7 +84,7 @@ Additionally, this project installs the following software for the purposes of d
 
 This sample shows how you can create a Lambda function to retrieve inventory information to create the integrated inventory spreadsheet which can be used as a separate attachment to the FedRAMP System Security Plan (SSP) and is the repository associated to the [Automating creation of a FedRAMP Integrated Inventory Workbook](https://aws.amazon.com/blogs/publicsector/automating-creation-fedramp-integrated-inventory-workbook/) blog post. The spreadsheet template can be found [here](https://www.fedramp.gov/new-integrated-inventory-template/).
 
-This sample populates the inventory spreadsheet with a point in time view of a subset of all AWS resources spanning multiple AWS accounts. The following resource types are currently supported AWS::EC2::Instance, AWS::ElasticLoadBalancingV2::LoadBalancer, AWS::ElasticLoadBalancing::LoadBalancer, AWS::DynamoDB::Table, AWS::RDS::DBInstance.
+This sample populates the inventory spreadsheet with a point in time view of AWS resources spanning multiple accounts. **25 resource types** are now supported (see list above).
 
 There are other assets that must be tracked in the spreadsheet (e.g. software running on EC2 instances/containers) which this sample does not gather. The design does lend itself to be extended to gather inventory information from multiple sources for various resource types.
 
@@ -38,7 +105,7 @@ Additionally, here are notes of other key files/folders not typically found in a
 * **package.sh** - This script bundles the package so that it can be uploaded to Lambda. However, a Lambda package .zip file is already included with the repository. This requires the setup of a virtual environment using pyenv. [AWS Serverless Application Model](https://aws.amazon.com/serverless/sam/) was not used in an effort to minimize the number of concepts introduced.
 
 ## Running the Code
-The code was developed using Python 3.8, pyenv, and pipenv. After cloning the repository locally, create a virtualenv however you prefer. Both a requirements.txt file and Pipfile have been provided, for example if you have Python 3.8 installed and set at the current version, you can run the following commands in the project directory:
+The code requires Python 3.11+. After cloning the repository locally, create a virtualenv however you prefer. Both a requirements.txt file and Pipfile have been provided, for example if you have Python 3.11 installed and set at the current version, you can run the following commands in the project directory:
 
 ``` bash
 python -m venv .
