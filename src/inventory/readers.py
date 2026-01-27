@@ -17,9 +17,9 @@ if log_level_name not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
 _logger.setLevel(getattr(logging, log_level_name))
 
 class AwsConfigInventoryReader():
-    def __init__(self, lambda_context, sts_client=boto3.client('sts'), mappers=None):
+    def __init__(self, lambda_context, sts_client=None, mappers=None):
         self._lambda_context = lambda_context
-        self._sts_client = sts_client
+        self._sts_client = sts_client if sts_client is not None else boto3.client('sts')
         if mappers is None:
             mappers = [EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper()]
         self._mappers: List[DataMapper] = mappers
