@@ -115,7 +115,7 @@ class ElbDataMapper(DataMapper):
         if config_resource["resourceType"] == "AWS::ElasticLoadBalancing::LoadBalancer":
             return "Load Balancer-Classic"
         else:
-            lb_type = _sanitize_for_excel(config_resource['configuration']['type'])
+            lb_type = _sanitize_for_excel(config_resource.get('configuration', {}).get('type', 'unknown'))
             return f"Load Balancer-{lb_type}"
 
     def _get_ip_addresses(self, availabilityZones: dict) -> List[str]:
