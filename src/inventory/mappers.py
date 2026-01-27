@@ -15,7 +15,9 @@ def _get_tag_value(tags: dict, tag_name: str) -> str:
     return _sanitize_for_excel(value) if value else ''
 
 def _sanitize_for_excel(value: str) -> str:
-    """Prevent Excel formula injection by prefixing dangerous characters"""
+    """Prevent Excel formula injection by prefixing dangerous characters.
+    Note: This protects against CSV/Excel injection, not XSS (output is Excel, not HTML).
+    """
     if value and isinstance(value, str) and len(value) > 0 and value[0] in ('=', '+', '-', '@'):
         return f"'{value}"
     return value if value else ''
