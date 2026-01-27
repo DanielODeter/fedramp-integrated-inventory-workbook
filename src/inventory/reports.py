@@ -61,8 +61,12 @@ class DeliverReportCommandHandler():
         self._s3_client = s3_client
 
     def execute(self, report_file_name: str) -> str:
-        target_path = os.environ["REPORT_TARGET_BUCKET_PATH"]
-        target_bucket = os.environ["REPORT_TARGET_BUCKET_NAME"]
+        target_path = os.environ.get("REPORT_TARGET_BUCKET_PATH")
+        target_bucket = os.environ.get("REPORT_TARGET_BUCKET_NAME")
+        
+        if not target_path or not target_bucket:
+            raise ValueError("REPORT_TARGET_BUCKET_PATH and REPORT_TARGET_BUCKET_NAME environment variables are required")
+        
         report_filename = os.path.basename(_workbook_output_file_path)
         report_stem = os.path.splitext(report_filename)[0]
         report_s3_key = os.path.join(target_path, f"{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx")

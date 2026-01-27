@@ -5,16 +5,22 @@ from inventory.readers import AwsConfigInventoryReader
 from inventory.reports import CreateReportCommandHandler, DeliverReportCommandHandler
 
 def lambda_handler(event, context):
-    inventory = AwsConfigInventoryReader(lambda_context=context).get_resources_from_all_accounts()
+    try:
+        inventory = AwsConfigInventoryReader(lambda_context=context).get_resources_from_all_accounts()
+        report_path = CreateReportCommandHandler().execute(inventory)
+        report_url = DeliverReportCommandHandler().execute(report_path)
 
-    report_path = CreateReportCommandHandler().execute(inventory)
-    report_url = DeliverReportCommandHandler().execute(report_path)
-
-    return {'statusCode': 200,
-            'body': {
-                    'report': { 'url': report_url }
+        return {'statusCode': 200,
+                'body': {
+                        'report': { 'url': report_url }
+                    }
                 }
-            }
+    except Exception as ex:
+        return {'statusCode': 500,
+                'body': {
+                        'error': str(ex)
+                    }
+                }
 
 if __name__ == "__main__":
     class Context(object):

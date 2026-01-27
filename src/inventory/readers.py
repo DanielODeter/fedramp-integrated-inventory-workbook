@@ -29,12 +29,12 @@ class AwsConfigInventoryReader():
                             region_name=os.environ.get('AWS_REGION', 'us-east-1'))
 
     def _get_resources_from_account(self, account_id: str) -> Iterator[List[str]]:
+        cross_account_role = os.environ.get('CROSS_ACCOUNT_ROLE_NAME')
+        if not cross_account_role:
+            raise ValueError("CROSS_ACCOUNT_ROLE_NAME environment variable is required")
+        
         try:
             _logger.info(f"assuming role on account {account_id}")
-            
-            cross_account_role = os.environ.get('CROSS_ACCOUNT_ROLE_NAME')
-            if not cross_account_role:
-                raise ValueError("CROSS_ACCOUNT_ROLE_NAME environment variable is required")
 
             sts_response = self._sts_client.assume_role(RoleArn=f"arn:{self._get_aws_partition()}:iam::{account_id}:role/{cross_account_role}",
                                                         RoleSessionName=f"{account_id}-Assumed-Role",
@@ -71,7 +71,15 @@ class AwsConfigInventoryReader():
         _logger.info("starting retrieval of inventory from AWS Config")
 
         all_inventory : List[InventoryData] = []
-        accounts = json.loads(os.environ["ACCOUNT_LIST"])
+        
+        try:
+            accounts = json.loads(os.environ["ACCOUNT_LIST"])
+        except KeyError:
+            _logger.error("ACCOUNT_LIST environment variable is required")
+            raise ValueError("ACCOUNT_LIST environment variable is required")
+        except json.JSONDecodeError as ex:
+            _logger.error("ACCOUNT_LIST environment variable contains invalid JSON: %s", ex)
+            raise ValueError(f"ACCOUNT_LIST environment variable contains invalid JSON: {ex}")
 
         for account in accounts:
             _logger.info(f"retrieving inventory for account {account['id']}")

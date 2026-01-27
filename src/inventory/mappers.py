@@ -129,7 +129,7 @@ class ElbDataMapper(DataMapper):
                  "authenticated_scan_planned": "Yes",
                  "is_public": "Yes" if config_resource.get("configuration", {}).get("scheme", "unknown") == "internet-facing" else "No",
                  # Classic ELBs have key of "vpcid" while V2 ELBs have key of "vpcId"
-                 "network_id": config_resource["configuration"]["vpcId"] if "vpcId" in config_resource["configuration"] else config_resource["configuration"]["vpcid"],
+                 "network_id": config_resource["configuration"].get("vpcId") or config_resource["configuration"].get("vpcid") or "",
                  "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
                  "owner": _get_tag_value(config_resource["tags"], "owner") }
 
@@ -156,8 +156,8 @@ class RdsDataMapper(DataMapper):
                  "software_vendor": "AWS",
                  # DB Cluster vs DB Instance
                  "is_public": "Yes" if "publiclyAccessible" in config_resource["configuration"] and config_resource["configuration"]["publiclyAccessible"] else "No",                 
-                 "hardware_model": config_resource["configuration"]["dBInstanceClass"] if "dBInstanceClass" in config_resource["configuration"] else '',                 
-                 "software_product_name": f"{config_resource['configuration']['engine']}-{config_resource['configuration']['engineVersion']}",
+                 "hardware_model": config_resource["configuration"].get("dBInstanceClass", ""),                 
+                 "software_product_name": f"{config_resource['configuration'].get('engine', 'unknown')}-{config_resource['configuration'].get('engineVersion', 'unknown')}",
                  "network_id": config_resource['configuration']['dBSubnetGroup']['vpcId'] if "dBSubnetGroup" in config_resource['configuration'] else (config_resource['configuration']['dbsubnetGroup']['vpcId'] if "dbsubnetGroup" in config_resource['configuration'] else ''),
                  "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
                  "owner": _get_tag_value(config_resource["tags"], "owner") }
