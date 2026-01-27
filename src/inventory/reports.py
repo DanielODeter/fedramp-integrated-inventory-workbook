@@ -24,7 +24,15 @@ class CreateReportCommandHandler():
             worksheet.cell(column=column, row=row, value=value)
 
     def execute(self, inventory: List[InventoryData]) -> str:
-        workbook = load_workbook(_workbook_template_file_name)
+        try:
+            workbook = load_workbook(_workbook_template_file_name)
+        except FileNotFoundError:
+            _logger.error(f"Template file not found: {_workbook_template_file_name}")
+            raise
+        except Exception as e:
+            _logger.error(f"Failed to load workbook template: {e}", exc_info=True)
+            raise
+        
         report_worksheet_name = os.environ.get("REPORT_WORKSHEET_NAME", "Inventory")
         report_worksheet = workbook[report_worksheet_name]
         rowNumber: int = int(os.environ.get("REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER", DEFAULT_REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER))
