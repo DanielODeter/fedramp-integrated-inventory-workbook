@@ -4,14 +4,23 @@
 
 ## What's New - January 2025
 
-### 🔒 Critical Security Fixes
+<details>
+<summary>🔒 Critical Security Fixes</summary>
+
 - Fixed CloudFormation YAML syntax errors in AssumeRolePolicyDocument (missing list indicator)
 - Fixed ARN parsing boundary check preventing IndexError
 - Fixed mutable default argument causing shared state between instances
 - Added S3 bucket encryption (AES256) for FedRAMP compliance
 - Fixed logger level configuration to properly handle string environment variables
+- Added error handling to Lambda handler to return 500 status on failures
+- Fixed configuration error handling - CROSS_ACCOUNT_ROLE_NAME validation now fails fast
+- Added error handling for ACCOUNT_LIST JSON parsing with clear error messages
 
-### ⚡ High Priority Fixes
+</details>
+
+<details>
+<summary>⚡ High Priority Fixes</summary>
+
 - **Upgraded Lambda runtime from Python 3.8 to Python 3.11** (3.8 deprecated)
 - Added environment variable validation for CROSS_ACCOUNT_ROLE_NAME
 - Fixed dictionary access safety checks throughout codebase
@@ -23,8 +32,15 @@
 - Fixed NAT Gateway to create separate entries for private and public IPs
 - Fixed file handle resource leak using context manager
 - Removed duplicate owner field write in reports
+- Fixed vpcId/vpcid key access with safe fallback to prevent KeyError
+- Fixed RDS engine/engineVersion key access with safe defaults
+- Added validation for REPORT_TARGET_BUCKET_PATH and REPORT_TARGET_BUCKET_NAME environment variables
 
-### 🏗️ Infrastructure Improvements
+</details>
+
+<details>
+<summary>🏗️ Infrastructure Improvements</summary>
+
 - Added CloudWatch Log Groups with 90-day retention policy
 - Added S3 lifecycle policies (7-year retention, 90-day noncurrent versions)
 - Removed hardcoded IAM role names for stack reusability
@@ -33,7 +49,10 @@
 - Removed obsolete DependsOn configurations
 - Made temp file paths portable across operating systems
 
-### 🚀 New AWS Service Support (8→25 resource types)
+</details>
+
+<details>
+<summary>🚀 New AWS Service Support (8→25 resource types)</summary>
 
 **Compute Resources:**
 - AWS Lambda Functions
@@ -59,15 +78,22 @@
 - NAT Gateways
 - Network Interfaces
 
-### 📊 Performance Optimizations
+</details>
+
+<details>
+<summary>📊 Performance Optimizations</summary>
+
 - Replaced deep copy with shallow copy for dictionary operations
 - Fixed PEP8 violations (empty container checks, naming conventions)
+
+</details>
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.
 
 ---
 
-## License
+<details>
+<summary>📜 License & Dependencies</summary>
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
 
@@ -79,6 +105,8 @@ Additionally, this project installs the following software for the purposes of d
 * [mypy](http://mypy-lang.org/) package. Python open source software is provided under the MIT License.
 * [autopep8](https://github.com/hhatto/autopep8) package. Python open source software is provided under the MIT License.
 * [callee](https://callee.readthedocs.io/en/latest/reference/general.html) package. Python open source software is provided under the BSD 3-Clause "New" or "Revised" License.
+
+</details>
 
 ## Overview
 
@@ -220,9 +248,10 @@ The project was developed using Visual Studio Code and the .vscode directory wit
 * **REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER** (Optional) - Default of 3. Row number (not index) of where inventory data will start to be populated.
 
 ## Design
-This section contains the design details of this package.
 
-### Items Completed in This Fork
+<details>
+<summary>✅ Items Completed in This Fork</summary>
+
 * ✅ CloudWatch Log Groups with 90-day retention policy
 * ✅ S3 bucket encryption (AES256) and lifecycle policies
 * ✅ Improved error handling and input validation
@@ -230,7 +259,11 @@ This section contains the design details of this package.
 * ✅ Python 3.11 runtime upgrade
 * ✅ Security vulnerability fixes
 
-### Items Out-of-Scope / Future Enhancements
+</details>
+
+<details>
+<summary>🔮 Items Out-of-Scope / Future Enhancements</summary>
+
 * CloudWatch alarms/SNS notifications for inventory collection errors
 * AWS Organizations integration for automatic account discovery
 * CloudWatch custom metrics for inventory statistics
@@ -240,6 +273,10 @@ This section contains the design details of this package.
 * Automated CI/CD pipeline with code coverage reporting
 * AWS SAM or CDK for infrastructure as code
 
+</details>
+
+<details>
+<summary>🏛️ Architecture Diagrams</summary>
 ### Conceptual Design
 ![Conceptual Design](./docs/ConceptualDesign.png)
 
@@ -276,3 +313,5 @@ The Handler subsequently calls the CreateReportCommandHandler and DeliverReportC
 As depicted above, errors encountered during the retrieval of inventory information from AWS Config, are logged; however, processing continues. Below is a screenshot from CloudWatch showing the log entry with specific sections of the log entry highlighted.
 
 ![Error Log Entry](docs/ErrorLogEntry.png)
+
+</details>
