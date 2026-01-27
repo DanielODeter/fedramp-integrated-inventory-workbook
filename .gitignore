@@ -1,10 +1,10 @@
-# Local deployment artifacts and sensitive data
+# other
 package/
 *.zip
 output.json
 *.bat
-!quick-deploy.bat
 *.xlsx
+
 
 # Ignore MacOS folder
 .DS_Store

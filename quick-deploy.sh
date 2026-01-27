@@ -70,7 +70,14 @@ LAMBDA_BUCKET="fedramp-lambda-code-${MGMT_ACCOUNT_ID}"
 aws s3 mb s3://${LAMBDA_BUCKET} --profile ${AWS_PROFILE} --region ${AWS_REGION} 2>/dev/null || true
 
 # Upload Lambda code
-aws s3 cp fedramp-inventory-lambda.zip s3://${LAMBDA_BUCKET}/ --profile ${AWS_PROFILE} --region ${AWS_REGION}
+if ! aws s3 cp fedramp-inventory-lambda.zip s3://${LAMBDA_BUCKET}/ --profile ${AWS_PROFILE} --region ${AWS_REGION}; then
+    echo -e "${RED}Error: Failed to upload Lambda code to S3${NC}"
+    echo "Please check:"
+    echo "  - AWS credentials for profile '${AWS_PROFILE}'"
+    echo "  - S3 bucket permissions"
+    echo "  - Network connectivity"
+    exit 1
+fi
 echo -e "${GREEN}✓ Lambda code uploaded to s3://${LAMBDA_BUCKET}/${NC}"
 echo ""
 
@@ -102,7 +109,7 @@ echo ""
 
 # Step 4: Deploy CloudFormation stack
 echo -e "${YELLOW}[4/4] Deploying CloudFormation stack...${NC}"
-aws cloudformation deploy \
+if ! aws cloudformation deploy \
     --template-file templates/InventoryCollector.yml \
     --stack-name fedramp-inventory \
     --parameter-overrides \
@@ -113,7 +120,12 @@ aws cloudformation deploy \
         LambdaPayload=fedramp-inventory-lambda.zip \
     --capabilities CAPABILITY_NAMED_IAM \
     --profile ${AWS_PROFILE} \
-    --region ${AWS_REGION}
+    --region ${AWS_REGION}; then
+    echo -e "${RED}Error: CloudFormation deployment failed${NC}"
+    echo "Check the CloudFormation console for details:"
+    echo "  https://console.aws.amazon.com/cloudformation/home?region=${AWS_REGION}"
+    exit 1
+fi
 
 echo ""
 echo -e "${GREEN}========================================${NC}"

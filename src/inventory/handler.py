@@ -2,6 +2,7 @@
 # License:
 # This sample code is made available under the MIT-0 license. See the LICENSE file.
 import logging
+import json
 from inventory.readers import AwsConfigInventoryReader
 from inventory.reports import CreateReportCommandHandler, DeliverReportCommandHandler
 
@@ -17,16 +18,16 @@ def lambda_handler(event, context):
         
         _logger.info(f"Inventory collection completed successfully. Report: {report_url}")
         return {'statusCode': 200,
-                'body': {
+                'body': json.dumps({
                         'report': { 'url': report_url }
-                    }
+                    })
                 }
     except Exception as ex:
         _logger.error(f"Inventory collection failed: {ex}", exc_info=True)
         return {'statusCode': 500,
-                'body': {
+                'body': json.dumps({
                         'error': 'Internal server error occurred'
-                    }
+                    })
                 }
 
 if __name__ == "__main__":

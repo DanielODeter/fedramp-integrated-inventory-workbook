@@ -12,9 +12,10 @@ from  inventory.mappers import DataMapper, EC2DataMapper, ElbDataMapper, DynamoD
 _logger = logging.getLogger("inventory.readers")
 log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
 if log_level_name not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
-    _logger.warning(f"Invalid LOG_LEVEL '{log_level_name}', defaulting to INFO")
-    log_level_name = "INFO"
-_logger.setLevel(getattr(logging, log_level_name))
+    _logger.setLevel(logging.INFO)
+    _logger.warning("Invalid LOG_LEVEL '%s', defaulting to INFO", log_level_name)
+else:
+    _logger.setLevel(getattr(logging, log_level_name))
 
 class AwsConfigInventoryReader():
     def __init__(self, lambda_context, sts_client=None, mappers=None):
@@ -98,10 +99,15 @@ class AwsConfigInventoryReader():
             raise ValueError(f"ACCOUNT_LIST environment variable contains invalid JSON: {ex}")
 
         for account in accounts:
-            _logger.info(f"retrieving inventory for account {account['id']}")
+            account_id = account.get('id')
+            if not account_id:
+                _logger.warning("Skipping account with missing 'id' field")
+                continue
+            
+            _logger.info("retrieving inventory for account %s", account_id)
 
-            for resource_list_page in self._get_resources_from_account(account["id"]):
-                _logger.debug(f"current page of inventory contained {len(resource_list_page)} items from AWS Config")
+            for resource_list_page in self._get_resources_from_account(account_id):
+                _logger.debug("current page of inventory contained %s items from AWS Config", len(resource_list_page))
 
                 for raw_resource in resource_list_page:
                     resource : dict = json.loads(raw_resource)

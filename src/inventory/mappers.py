@@ -18,9 +18,13 @@ def _sanitize_for_excel(value: str) -> str:
     """Prevent Excel formula injection by prefixing dangerous characters.
     Note: This protects against CSV/Excel injection, not XSS (output is Excel, not HTML).
     """
-    if value and isinstance(value, str) and len(value) > 0 and value[0] in ('=', '+', '-', '@'):
+    if not value:
+        return ''
+    if not isinstance(value, str):
+        return ''
+    if value[0] in ('=', '+', '-', '@'):
         return f"'{value}"
-    return value if value else ''
+    return value
 
 class InventoryData:
    def __init__(self, *, asset_type=None, unique_id=None, ip_address=None, location=None, is_virtual=None,
@@ -76,36 +80,39 @@ class EC2DataMapper(DataMapper):
 
     def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
         ec2_data_list: List[InventoryData] = []
+        config = config_resource.get("configuration", {})
+        tags = config_resource.get("tags", [])
 
-        for nic in config_resource["configuration"]["networkInterfaces"]:
-            for ipAddress in nic["privateIpAddresses"]:
+        for nic in config.get("networkInterfaces", []):
+            for ipAddress in nic.get("privateIpAddresses", []):
                 ec2_data = { "asset_type": "EC2",
-                             "unique_id": config_resource["configuration"]["instanceId"],
-                             "ip_address": ipAddress["privateIpAddress"],
+                             "unique_id": config.get("instanceId", ""),
+                             "ip_address": ipAddress.get("privateIpAddress", ""),
                              "is_virtual": "Yes",
                              "authenticated_scan_planned": "Yes",
-                             "mac_address": nic["macAddress"],
-                             "baseline_config": config_resource["configuration"]["imageId"],
-                             "hardware_model": config_resource["configuration"]["instanceType"],
-                             "network_id": config_resource["configuration"]["vpcId"],
-                             "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
-                             "owner": _get_tag_value(config_resource["tags"], "owner") }
+                             "mac_address": nic.get("macAddress", ""),
+                             "baseline_config": config.get("imageId", ""),
+                             "hardware_model": config.get("instanceType", ""),
+                             "network_id": config.get("vpcId", ""),
+                             "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                             "owner": _get_tag_value(tags, "owner") }
 
-                if (public_dns_name := config_resource["configuration"].get("publicDnsName")):
+                if (public_dns_name := config.get("publicDnsName")):
                     ec2_data["dns_name"] = public_dns_name
                     ec2_data["is_public"] = "Yes"
                 else:
-                    ec2_data["dns_name"] = config_resource["configuration"]["privateDnsName"]
+                    ec2_data["dns_name"] = config.get("privateDnsName", "")
                     ec2_data["is_public"] = "No"
 
                 ec2_data_list.append(InventoryData(**ec2_data))
 
                 if "association" in ipAddress:
-                    # Each IP address needs its own row in report so public IP requires an additional row
-                    ec2_data = copy.deepcopy(ec2_data)
-                    ec2_data["ip_address"] = ipAddress["association"]["publicIp"]
-
-                    ec2_data_list.append(InventoryData(**ec2_data))
+                    public_ip = ipAddress["association"].get("publicIp", "")
+                    if public_ip:
+                        # Each IP address needs its own row in report so public IP requires an additional row
+                        ec2_data = copy.copy(ec2_data)
+                        ec2_data["ip_address"] = public_ip
+                        ec2_data_list.append(InventoryData(**ec2_data))
 
         return ec2_data_list
 
@@ -132,23 +139,25 @@ class ElbDataMapper(DataMapper):
 
     def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
         data_list: List[InventoryData] = []
+        
+        config = config_resource.get("configuration", {})
+        # Classic ELBs have key of "vpcid" while V2 ELBs have key of "vpcId"
+        network_id = config.get("vpcId") or config.get("vpcid") or ""
 
         data = { "asset_type": self._get_asset_type_name(config_resource),
-                 "unique_id": config_resource["arn"],
+                 "unique_id": config_resource.get("arn", ""),
                  "is_virtual": "Yes",
                  "authenticated_scan_planned": "Yes",
-                 "is_public": "Yes" if config_resource.get("configuration", {}).get("scheme", "unknown") == "internet-facing" else "No",
-                 # Classic ELBs have key of "vpcid" while V2 ELBs have key of "vpcId"
-                 "network_id": config_resource["configuration"].get("vpcId") or config_resource["configuration"].get("vpcid") or "",
-                 "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
-                 "owner": _get_tag_value(config_resource["tags"], "owner") }
+                 "is_public": "Yes" if config.get("scheme", "unknown") == "internet-facing" else "No",
+                 "network_id": network_id,
+                 "iir_diagram_label": _get_tag_value(config_resource.get("tags", []), "iir_diagram_label"),
+                 "owner": _get_tag_value(config_resource.get("tags", []), "owner") }
 
-        if len(ip_addresses := self._get_ip_addresses(config_resource.get("configuration", {}).get("availabilityZones", []))) > 0:
+        ip_addresses = self._get_ip_addresses(config.get("availabilityZones", []))
+        if ip_addresses:
             for ip_address in ip_addresses:
                 data = copy.copy(data)
-
                 data["ip_address"] = ip_address
-
                 data_list.append(InventoryData(**data))
         else:
             data_list.append(InventoryData(**data))
@@ -160,15 +169,22 @@ class RdsDataMapper(DataMapper):
         return ["AWS::RDS::DBInstance", "AWS::RDS::DBCluster"]
 
     def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        # Extract network_id from either dBSubnetGroup or dbsubnetGroup
+        config = config_resource.get('configuration', {})
+        network_id = ''
+        if 'dBSubnetGroup' in config:
+            network_id = config.get('dBSubnetGroup', {}).get('vpcId', '')
+        elif 'dbsubnetGroup' in config:
+            network_id = config.get('dbsubnetGroup', {}).get('vpcId', '')
+        
         data = { "asset_type": "RDS",
                  "unique_id": config_resource["arn"],
                  "is_virtual": "Yes",
                  "software_vendor": "AWS",
-                 # DB Cluster vs DB Instance
-                 "is_public": "Yes" if "publiclyAccessible" in config_resource["configuration"] and config_resource["configuration"]["publiclyAccessible"] else "No",                 
-                 "hardware_model": config_resource["configuration"].get("dBInstanceClass", ""),                 
-                 "software_product_name": f"{config_resource['configuration'].get('engine', 'unknown')}-{config_resource['configuration'].get('engineVersion', 'unknown')}",
-                 "network_id": config_resource['configuration'].get('dBSubnetGroup', {}).get('vpcId', '') if "dBSubnetGroup" in config_resource['configuration'] else (config_resource['configuration'].get('dbsubnetGroup', {}).get('vpcId', '') if "dbsubnetGroup" in config_resource['configuration'] else ''),
+                 "is_public": "Yes" if "publiclyAccessible" in config and config["publiclyAccessible"] else "No",
+                 "hardware_model": config.get("dBInstanceClass", ""),
+                 "software_product_name": f"{config.get('engine', 'unknown')}-{config.get('engineVersion', 'unknown')}",
+                 "network_id": network_id,
                  "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
                  "owner": _get_tag_value(config_resource["tags"], "owner") }
 
