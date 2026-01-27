@@ -75,6 +75,10 @@ class DeliverReportCommandHandler():
         if not target_path or not target_bucket:
             raise ValueError("REPORT_TARGET_BUCKET_PATH and REPORT_TARGET_BUCKET_NAME environment variables are required")
         
+        # Validate target_path to prevent path traversal
+        if '..' in target_path or target_path.startswith('/'):
+            raise ValueError(f"Invalid target path format: {target_path}")
+        
         report_filename = os.path.basename(_workbook_output_file_path)
         report_stem = os.path.splitext(report_filename)[0]
         report_s3_key = os.path.join(target_path, f"{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx")
