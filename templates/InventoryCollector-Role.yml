@@ -8,8 +8,8 @@ Parameters:
   MasterAccountId:
     Description: Master Account AccountId
     Type: String
-    Default: 2222222222
-    AllowedPattern: '.+'
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be a valid 12-digit AWS account ID
 
 Resources:
   InventoryCollectorLambdaExecuteRole:
@@ -19,7 +19,7 @@ Resources:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-            Effect: "Allow"
+          - Effect: "Allow"
             Principal:
               AWS: !Ref MasterAccountId
             Action: "sts:AssumeRole"
@@ -29,5 +29,5 @@ Resources:
 
 Outputs: 
   InventoryCollectorLambdaExecuteRoleArn: 
-    Value: !Ref InventoryCollectorLambdaExecuteRole
+    Value: !GetAtt InventoryCollectorLambdaExecuteRole.Arn
 

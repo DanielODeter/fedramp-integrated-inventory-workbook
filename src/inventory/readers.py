@@ -7,15 +7,25 @@ import os
 from typing import Iterator, List, Optional
 import boto3
 from botocore.exceptions import ClientError
-from  inventory.mappers import DataMapper, EC2DataMapper, ElbDataMapper, DynamoDbTableDataMapper, InventoryData, RdsDataMapper
+from  inventory.mappers import (DataMapper, EC2DataMapper, ElbDataMapper, DynamoDbTableDataMapper, 
+                                 InventoryData, RdsDataMapper, EcsDataMapper, LambdaDataMapper, 
+                                 S3DataMapper, EfsDataMapper, RedshiftDataMapper, ElastiCacheDataMapper,
+                                 OpenSearchDataMapper, EksDataMapper, NetworkInterfaceDataMapper,
+                                 NatGatewayDataMapper, ApiGatewayDataMapper, CloudFrontDataMapper)
 
 _logger = logging.getLogger("inventory.readers")
-_logger.setLevel(os.environ.get("LOG_LEVEL", logging.INFO))
+_logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "INFO"), logging.INFO))
 
 class AwsConfigInventoryReader():
-    def __init__(self, lambda_context, sts_client=boto3.client('sts'), mappers=[EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper()]):
+    def __init__(self, lambda_context, sts_client=boto3.client('sts'), mappers=None):
         self._lambda_context = lambda_context
         self._sts_client = sts_client
+        if mappers is None:
+            mappers = [EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper(), 
+                      EcsDataMapper(), LambdaDataMapper(), S3DataMapper(), EfsDataMapper(),
+                      RedshiftDataMapper(), ElastiCacheDataMapper(), OpenSearchDataMapper(),
+                      EksDataMapper(), NetworkInterfaceDataMapper(), NatGatewayDataMapper(),
+                      ApiGatewayDataMapper(), CloudFrontDataMapper()]
         self._mappers: List[DataMapper] = mappers
 
     # Moved into it's own method to make it easier to mock boto3 client
@@ -29,17 +39,37 @@ class AwsConfigInventoryReader():
     def _get_resources_from_account(self, account_id: str) -> Iterator[List[str]]:
         try:
             _logger.info(f"assuming role on account {account_id}")
+            
+            # Validate required environment variable
+            cross_account_role = os.environ.get('CROSS_ACCOUNT_ROLE_NAME')
+            if not cross_account_role:
+                raise ValueError("CROSS_ACCOUNT_ROLE_NAME environment variable is required")
 
-            sts_response = self._sts_client.assume_role(RoleArn=f"arn:{self._get_aws_partition()}:iam::{account_id}:role/{os.environ['CROSS_ACCOUNT_ROLE_NAME']}",
-                                                        RoleSessionName=f"{account_id}-Assumed-Role",
-                                                        DurationSeconds=900)
-            config_client = self._get_config_client(sts_response)
+            # Check if we're querying the same account (no role assumption needed)
+            current_account = self._lambda_context.invoked_function_arn.split(":")[4]
+            
+            if current_account == account_id:
+                # Same account - use existing credentials
+                _logger.info(f"querying same account {account_id}, using current credentials")
+                config_client = boto3.client('config', region_name=os.environ['AWS_REGION'])
+            else:
+                # Different account - assume role
+                sts_response = self._sts_client.assume_role(RoleArn=f"arn:{self._get_aws_partition()}:iam::{account_id}:role/{cross_account_role}",
+                                                            RoleSessionName=f"{account_id}-Assumed-Role",
+                                                            DurationSeconds=900)
+                config_client = self._get_config_client(sts_response)
 
             next_token: str = ''
             while True:
                 resources_result = config_client.select_resource_config(Expression="SELECT arn, resourceType, configuration, tags "
                                                                                    "WHERE resourceType IN ('AWS::EC2::Instance', 'AWS::ElasticLoadBalancingV2::LoadBalancer', "
-                                                                                       "'AWS::ElasticLoadBalancing::LoadBalancer', 'AWS::DynamoDB::Table', 'AWS::RDS::DBInstance','AWS::RDS::DBCluster')",
+                                                                                       "'AWS::ElasticLoadBalancing::LoadBalancer', 'AWS::DynamoDB::Table', 'AWS::RDS::DBInstance', "
+                                                                                       "'AWS::RDS::DBCluster', 'AWS::ECS::Task', 'AWS::ECS::Service', 'AWS::Lambda::Function', "
+                                                                                       "'AWS::S3::Bucket', 'AWS::EFS::FileSystem', 'AWS::Redshift::Cluster', "
+                                                                                       "'AWS::ElastiCache::CacheCluster', 'AWS::ElastiCache::ReplicationGroup', "
+                                                                                       "'AWS::Elasticsearch::Domain', 'AWS::OpenSearchService::Domain', 'AWS::EKS::Cluster', "
+                                                                                       "'AWS::EC2::NetworkInterface', 'AWS::EC2::NatGateway', 'AWS::ApiGateway::RestApi', "
+                                                                                       "'AWS::ApiGatewayV2::Api', 'AWS::CloudFront::Distribution')",
                                                                         NextToken=next_token)
                 
                 next_token = resources_result.get('NextToken', '')
@@ -59,7 +89,7 @@ class AwsConfigInventoryReader():
     def _get_aws_partition(self):
         arn_parts = self._lambda_context.invoked_function_arn.split(":")
 
-        return arn_parts[1] if len(arn_parts) >= 1 else ''
+        return arn_parts[1] if len(arn_parts) >= 2 else ''
 
     def get_resources_from_all_accounts(self) -> List[InventoryData]:
         _logger.info("starting retrieval of inventory from AWS Config")
@@ -85,7 +115,7 @@ class AwsConfigInventoryReader():
 
                         continue
 
-                    if len(inventory_items := mapper.map(resource)) > 0:
+                    if not inventory_items:
                         all_inventory.extend(inventory_items)
 
         _logger.info(f"completed getting inventory, with a total of {len(all_inventory)}")
