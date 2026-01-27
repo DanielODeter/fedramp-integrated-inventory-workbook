@@ -67,7 +67,7 @@ See [CHANGELOG.md](CHANGELOG.md) for complete details.
 
 ---
 
-## Overview
+## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
 
@@ -82,7 +82,7 @@ Additionally, this project installs the following software for the purposes of d
 
 ## Overview
 
-This sample shows how you can create a Lambda function to retrieve inventory information to create the integrated inventory spreadsheet which can be used as a separate attachment to the FedRAMP System Security Plan (SSP) and is the repository associated to the [Automating creation of a FedRAMP Integrated Inventory Workbook](https://aws.amazon.com/blogs/publicsector/automating-creation-fedramp-integrated-inventory-workbook/) blog post. The spreadsheet template can be found [here](https://www.fedramp.gov/new-integrated-inventory-template/).
+This sample shows how you can create a Lambda function to retrieve inventory information to create the integrated inventory spreadsheet which can be used as a separate attachment to the FedRAMP System Security Plan (SSP). This is an enhanced fork of the [original AWS blog post project](https://aws.amazon.com/blogs/publicsector/automating-creation-fedramp-integrated-inventory-workbook/). The spreadsheet template can be found [here](https://www.fedramp.gov/new-integrated-inventory-template/).
 
 This sample populates the inventory spreadsheet with a point in time view of AWS resources spanning multiple accounts. **25 resource types** are now supported (see list above).
 
@@ -141,23 +141,28 @@ The project was developed using Visual Studio Code and the .vscode directory wit
 * **REPORT_TARGET_BUCKET_NAME** - Name of the S3 bucket where report will be uploaded (without "s3://")
 * **LOG_LEVEL (Optional)** - Default of INFO. The package uses the STL's logger module and any of the [log levels](https://docs.python.org/3/library/logging.html#levels) available there can be used.
 * **REPORT_WORKSHEET_NAME (Optional)** - Default of "Inventory". Name of the worksheet in the "SSP-A13-FedRAMP-Integrated-Inventory-Workbook-Template" spreadsheet where inventory data will be populated.
-* **REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER** (Optional) - Default of 6. Row number (not index) of where inventory data will start to be populated.
+* **REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER** (Optional) - Default of 3. Row number (not index) of where inventory data will start to be populated.
 
 ## Design
 This section contains the design details of this package.
 
-### Items In Scope
-* Gather inventory information from AWS Config and deliver to S3
+### Items Completed in This Fork
+* ✅ CloudWatch Log Groups with 90-day retention policy
+* ✅ S3 bucket encryption (AES256) and lifecycle policies
+* ✅ Improved error handling and input validation
+* ✅ Expanded resource type coverage (8→25 types)
+* ✅ Python 3.11 runtime upgrade
+* ✅ Security vulnerability fixes
 
-### Items Out-of-Scope / Possible Next Steps
-* Errors while retrieving inventory from AWS accounts are logged as errors but processing continues. Raising a CloudWatch event for these errors so that alerts can be created could be a next step.
-* Account list is provided via an Environment Variable, using either AWS Organizations to gather the list of member accounts or using a centralized store where this list is maintained could be a next step.
-* Publishing metrics is out of scope
-* Software/Container inventory is out of scope
-* Use of structured logging is out of scope
-* Access to the report is out of scope. This project merely drops the file in S3
-* Code Coverage, and CI/CD pipeline are out of scope
-* Using [AWS Serverless Application Model](https://aws.amazon.com/serverless/sam/) is out of scope
+### Items Out-of-Scope / Future Enhancements
+* CloudWatch alarms/SNS notifications for inventory collection errors
+* AWS Organizations integration for automatic account discovery
+* CloudWatch custom metrics for inventory statistics
+* Software/Container inventory (applications running on compute resources)
+* Structured logging (JSON format for better parsing)
+* S3 bucket policies for report access control
+* Automated CI/CD pipeline with code coverage reporting
+* AWS SAM or CDK for infrastructure as code
 
 ### Conceptual Design
 ![Conceptual Design](./docs/ConceptualDesign.png)
