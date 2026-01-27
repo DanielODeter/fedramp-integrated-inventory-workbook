@@ -88,7 +88,7 @@ class DeliverReportCommandHandler():
         if '..' in target_path or target_path.startswith('/'):
             raise ValueError(f"Invalid target path format: {target_path}")
         
-        report_filename = os.path.basename(_workbook_output_file_path)
+        report_filename = os.path.basename(report_file_name)
         report_stem = os.path.splitext(report_filename)[0]
         report_s3_key = os.path.join(target_path, f"{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx")
 
