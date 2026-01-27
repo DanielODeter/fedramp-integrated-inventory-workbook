@@ -46,6 +46,8 @@ class AwsConfigInventoryReader():
             config_client = self._get_config_client(sts_response)
 
             next_token: str = ''
+            # Note: Resource types are hardcoded here for query performance.
+            # This list should be kept in sync with the configured mappers.
             while True:
                 resources_result = config_client.select_resource_config(Expression="SELECT arn, resourceType, configuration, tags "
                                                                                    "WHERE resourceType IN ('AWS::EC2::Instance', 'AWS::ElasticLoadBalancingV2::LoadBalancer', "
