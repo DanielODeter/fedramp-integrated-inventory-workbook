@@ -143,7 +143,7 @@ class ElbDataMapper(DataMapper):
 
         if len(ip_addresses := self._get_ip_addresses(config_resource.get("configuration", {}).get("availabilityZones", []))) > 0:
             for ip_address in ip_addresses:
-                data = copy.deepcopy(data)
+                data = copy.copy(data)
 
                 data["ip_address"] = ip_address
 
