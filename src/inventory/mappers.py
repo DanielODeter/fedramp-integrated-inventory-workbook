@@ -141,7 +141,7 @@ class ElbDataMapper(DataMapper):
                  "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
                  "owner": _get_tag_value(config_resource["tags"], "owner") }
 
-        if len(ip_addresses := self._get_ip_addresses(config_resource["configuration"]["availabilityZones"])) > 0:
+        if len(ip_addresses := self._get_ip_addresses(config_resource.get("configuration", {}).get("availabilityZones", []))) > 0:
             for ip_address in ip_addresses:
                 data = copy.deepcopy(data)
 
