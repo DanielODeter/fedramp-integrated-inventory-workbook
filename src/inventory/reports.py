@@ -37,7 +37,7 @@ COL_OWNER = 22
 
 class CreateReportCommandHandler():
     def _write_cell_if_value_provided(self, worksheet: Worksheet, column:int, row: int, value: str):
-        if value:
+        if value is not None:
             worksheet.cell(column=column, row=row, value=value)
 
     def execute(self, inventory: List[InventoryData]) -> str:
