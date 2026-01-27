@@ -10,7 +10,11 @@ from botocore.exceptions import ClientError
 from  inventory.mappers import DataMapper, EC2DataMapper, ElbDataMapper, DynamoDbTableDataMapper, InventoryData, RdsDataMapper
 
 _logger = logging.getLogger("inventory.readers")
-_logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "INFO"), logging.INFO))
+log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+if log_level_name not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
+    _logger.warning(f"Invalid LOG_LEVEL '{log_level_name}', defaulting to INFO")
+    log_level_name = "INFO"
+_logger.setLevel(getattr(logging, log_level_name))
 
 class AwsConfigInventoryReader():
     def __init__(self, lambda_context, sts_client=boto3.client('sts'), mappers=None):
