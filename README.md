@@ -149,6 +149,11 @@ Deploy as a fully automated Lambda function with scheduled execution.
 **Quick Start (Automated):**
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/DanielODeter/fedramp-integrated-inventory-workbook.git
+cd fedramp-integrated-inventory-workbook
+
+# 2. Run the quick-deploy script
 # Linux/Mac
 ./quick-deploy.sh <management-account-id> <member-account-id> [aws-profile] [region]
 
