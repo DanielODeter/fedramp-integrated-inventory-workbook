@@ -34,8 +34,17 @@ class CreateReportCommandHandler():
             raise
         
         report_worksheet_name = os.environ.get("REPORT_WORKSHEET_NAME", "Inventory")
+        
+        if report_worksheet_name not in workbook.sheetnames:
+            raise ValueError(f"Worksheet '{report_worksheet_name}' not found in template")
+        
         report_worksheet = workbook[report_worksheet_name]
-        rowNumber: int = int(os.environ.get("REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER", DEFAULT_REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER))
+        
+        try:
+            rowNumber: int = int(os.environ.get("REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER", DEFAULT_REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER))
+        except ValueError as e:
+            _logger.error(f"Invalid row number in environment variable: {e}")
+            raise ValueError("REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER must be a valid integer")
 
         _logger.info(f"writing {len(inventory)} rows into worksheet {report_worksheet_name} starting at row {rowNumber}")
 
