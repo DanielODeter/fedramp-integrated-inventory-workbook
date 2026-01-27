@@ -10,12 +10,14 @@ from botocore.exceptions import ClientError
 from  inventory.mappers import DataMapper, EC2DataMapper, ElbDataMapper, DynamoDbTableDataMapper, InventoryData, RdsDataMapper
 
 _logger = logging.getLogger("inventory.readers")
-_logger.setLevel(os.environ.get("LOG_LEVEL", logging.INFO))
+_logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "INFO"), logging.INFO))
 
 class AwsConfigInventoryReader():
-    def __init__(self, lambda_context, sts_client=boto3.client('sts'), mappers=[EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper()]):
+    def __init__(self, lambda_context, sts_client=boto3.client('sts'), mappers=None):
         self._lambda_context = lambda_context
         self._sts_client = sts_client
+        if mappers is None:
+            mappers = [EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper()]
         self._mappers: List[DataMapper] = mappers
 
     # Moved into it's own method to make it easier to mock boto3 client
@@ -24,13 +26,17 @@ class AwsConfigInventoryReader():
                             aws_access_key_id=sts_response['Credentials']['AccessKeyId'],
                             aws_secret_access_key=sts_response['Credentials']['SecretAccessKey'],
                             aws_session_token=sts_response['Credentials']['SessionToken'],
-                            region_name=os.environ['AWS_REGION'])
+                            region_name=os.environ.get('AWS_REGION', 'us-east-1'))
 
     def _get_resources_from_account(self, account_id: str) -> Iterator[List[str]]:
         try:
             _logger.info(f"assuming role on account {account_id}")
+            
+            cross_account_role = os.environ.get('CROSS_ACCOUNT_ROLE_NAME')
+            if not cross_account_role:
+                raise ValueError("CROSS_ACCOUNT_ROLE_NAME environment variable is required")
 
-            sts_response = self._sts_client.assume_role(RoleArn=f"arn:{self._get_aws_partition()}:iam::{account_id}:role/{os.environ['CROSS_ACCOUNT_ROLE_NAME']}",
+            sts_response = self._sts_client.assume_role(RoleArn=f"arn:{self._get_aws_partition()}:iam::{account_id}:role/{cross_account_role}",
                                                         RoleSessionName=f"{account_id}-Assumed-Role",
                                                         DurationSeconds=900)
             config_client = self._get_config_client(sts_response)
@@ -51,7 +57,7 @@ class AwsConfigInventoryReader():
 
                 if not next_token:
                     break
-        except ClientError as ex:
+        except (ClientError, ValueError, KeyError) as ex:
             _logger.error("Received error: %s while retrieving resources from account %s, moving onto next account.", ex, account_id, exc_info=True)
 
             yield []
@@ -59,7 +65,7 @@ class AwsConfigInventoryReader():
     def _get_aws_partition(self):
         arn_parts = self._lambda_context.invoked_function_arn.split(":")
 
-        return arn_parts[1] if len(arn_parts) >= 1 else ''
+        return arn_parts[1] if len(arn_parts) >= 2 else ''
 
     def get_resources_from_all_accounts(self) -> List[InventoryData]:
         _logger.info("starting retrieval of inventory from AWS Config")
@@ -85,7 +91,8 @@ class AwsConfigInventoryReader():
 
                         continue
 
-                    if len(inventory_items := mapper.map(resource)) > 0:
+                    inventory_items = mapper.map(resource)
+                    if inventory_items:
                         all_inventory.extend(inventory_items)
 
         _logger.info(f"completed getting inventory, with a total of {len(all_inventory)}")

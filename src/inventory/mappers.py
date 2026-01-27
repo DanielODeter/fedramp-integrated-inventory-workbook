@@ -8,7 +8,7 @@ from typing import List
 from abc import ABC, abstractmethod
 
 _logger = logging.getLogger("inventory.mappers")
-_logger.setLevel(os.environ.get("LOG_LEVEL", logging.INFO))
+_logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "INFO"), logging.INFO))
 
 def _get_tag_value(tags: dict, tag_name: str) -> str:
     return next((tag["value"] for tag in tags if tag["key"].casefold() == tag_name.casefold()), '')
@@ -127,7 +127,7 @@ class ElbDataMapper(DataMapper):
                  "unique_id": config_resource["arn"],
                  "is_virtual": "Yes",
                  "authenticated_scan_planned": "Yes",
-                 "is_public": "Yes" if config_resource.get("configuration").get("scheme", "unknown") == "internet-facing" else "No",
+                 "is_public": "Yes" if config_resource.get("configuration", {}).get("scheme", "unknown") == "internet-facing" else "No",
                  # Classic ELBs have key of "vpcid" while V2 ELBs have key of "vpcId"
                  "network_id": config_resource["configuration"]["vpcId"] if "vpcId" in config_resource["configuration"] else config_resource["configuration"]["vpcid"],
                  "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
@@ -156,10 +156,9 @@ class RdsDataMapper(DataMapper):
                  "software_vendor": "AWS",
                  # DB Cluster vs DB Instance
                  "is_public": "Yes" if "publiclyAccessible" in config_resource["configuration"] and config_resource["configuration"]["publiclyAccessible"] else "No",                 
-                 "hardware_model": config_resource["configuration"] ["dBInstanceClass"] if "dBInstanceClass" in config_resource["configuration"] else '',                 
+                 "hardware_model": config_resource["configuration"]["dBInstanceClass"] if "dBInstanceClass" in config_resource["configuration"] else '',                 
                  "software_product_name": f"{config_resource['configuration']['engine']}-{config_resource['configuration']['engineVersion']}",
-                 # DB Cluster vs DB Instance
-                 "network_id": config_resource['configuration']['dBSubnetGroup']['vpcId'] if "dBSubnetGroup" in config_resource['configuration'] else config_resource['configuration']['dbsubnetGroup'] if "dbsubnetGroup" in config_resource['configuration'] else '',
+                 "network_id": config_resource['configuration']['dBSubnetGroup']['vpcId'] if "dBSubnetGroup" in config_resource['configuration'] else (config_resource['configuration']['dbsubnetGroup']['vpcId'] if "dbsubnetGroup" in config_resource['configuration'] else ''),
                  "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
                  "owner": _get_tag_value(config_resource["tags"], "owner") }
 
