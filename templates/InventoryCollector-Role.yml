@@ -8,8 +8,9 @@ Parameters:
   MasterAccountId:
     Description: Master Account AccountId
     Type: String
-    Default: 2222222222
-    AllowedPattern: '.+'
+    Default: 123456789012
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be a valid 12-digit AWS account ID
 
 Resources:
   InventoryCollectorLambdaExecuteRole:
