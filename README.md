@@ -139,7 +139,7 @@ Additionally, here are notes of other key files/folders not typically found in a
 </details>
 
 <details>
-<summary>🚀 Deployment Options</summary>
+<summary>🚀 Deployment Options (How to Install)</summary>
 
 <details>
 <summary>🏛️ Option 1: CloudFormation Deployment (Recommended for Production)</summary>
