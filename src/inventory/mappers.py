@@ -60,11 +60,11 @@ class DataMapper(ABC):
 
         mapped_data = []
 
-        _logger.debug(f"mapping {config_resource['resourceType']}")
+        _logger.debug("mapping %s", config_resource['resourceType'])
 
         mapped_data.extend(self._do_mapping(config_resource))
 
-        _logger.debug(f"mapping resulted in a total of {len(mapped_data)} rows")
+        _logger.debug("mapping resulted in a total of %d rows", len(mapped_data))
 
         return mapped_data    
 
