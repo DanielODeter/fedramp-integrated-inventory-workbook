@@ -25,7 +25,7 @@ def lambda_handler(event, context):
         _logger.error(f"Inventory collection failed: {ex}", exc_info=True)
         return {'statusCode': 500,
                 'body': {
-                        'error': str(ex)
+                        'error': 'Internal server error occurred'
                     }
                 }
 
