@@ -90,7 +90,7 @@ class DeliverReportCommandHandler():
         
         report_filename = os.path.basename(report_file_name)
         report_stem = os.path.splitext(report_filename)[0]
-        report_s3_key = os.path.join(target_path, f"{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx")
+        report_s3_key = f"{target_path}/{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx"
 
         # Validate file path to prevent path traversal
         if os.path.abspath(report_file_name) != os.path.abspath(_workbook_output_file_path):
