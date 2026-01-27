@@ -92,13 +92,16 @@ class DeliverReportCommandHandler():
         if os.path.abspath(report_file_name) != os.path.abspath(_workbook_output_file_path):
             raise ValueError(f"Invalid report file path: {report_file_name}")
         
-        report_filename = os.path.basename(report_file_name)
+        # Use the validated expected path for file operations
+        validated_path = _workbook_output_file_path
+        
+        report_filename = os.path.basename(validated_path)
         report_stem = os.path.splitext(report_filename)[0]
         report_s3_key = f"{target_path}/{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx"
         
-        _logger.info(f"uploading file '{report_file_name}' to bucket '{target_bucket}' with key '{report_s3_key}'")
+        _logger.info(f"uploading file '{validated_path}' to bucket '{target_bucket}' with key '{report_s3_key}'")
 
-        with open(report_file_name, "rb") as object_data:
+        with open(validated_path, "rb") as object_data:
             self._s3_client.put_object(Bucket=target_bucket, Key=report_s3_key, Body=object_data)
 
         _logger.info(f"completed file upload")
