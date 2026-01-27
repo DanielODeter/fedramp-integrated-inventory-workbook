@@ -13,6 +13,12 @@ _logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "INFO"), logging.I
 def _get_tag_value(tags: dict, tag_name: str) -> str:
     return next((tag["value"] for tag in tags if tag["key"].casefold() == tag_name.casefold()), '')
 
+def _sanitize_for_excel(value: str) -> str:
+    """Prevent Excel formula injection by prefixing dangerous characters"""
+    if value and value[0] in ('=', '+', '-', '@'):
+        return f"'{value}"
+    return value
+
 class InventoryData:
    def __init__(self, *, asset_type=None, unique_id=None, ip_address=None, location=None, is_virtual=None,
                  authenticated_scan_planned=None, dns_name=None, mac_address=None, baseline_config=None,
@@ -108,7 +114,8 @@ class ElbDataMapper(DataMapper):
         if config_resource["resourceType"] == "AWS::ElasticLoadBalancing::LoadBalancer":
             return "Load Balancer-Classic"
         else:
-            return f"Load Balancer-{config_resource['configuration']['type']}"
+            lb_type = _sanitize_for_excel(config_resource['configuration']['type'])
+            return f"Load Balancer-{lb_type}"
 
     def _get_ip_addresses(self, availabilityZones: dict) -> List[str]:
         ip_addresses: List[str] = []
