@@ -104,20 +104,82 @@ Additionally, here are notes of other key files/folders not typically found in a
 
 * **package.sh** - This script bundles the package so that it can be uploaded to Lambda. However, a Lambda package .zip file is already included with the repository. This requires the setup of a virtual environment using pyenv. [AWS Serverless Application Model](https://aws.amazon.com/serverless/sam/) was not used in an effort to minimize the number of concepts introduced.
 
-## Running the Code
-The code requires Python 3.11+. After cloning the repository locally, create a virtualenv however you prefer. Both a requirements.txt file and Pipfile have been provided, for example if you have Python 3.11 installed and set at the current version, you can run the following commands in the project directory:
+## Deployment Options
+
+### Option 1: CloudFormation Deployment (Recommended for Production)
+
+Deploy as a fully automated Lambda function with scheduled execution:
+
+**Prerequisites:**
+- AWS CLI configured with appropriate credentials
+- AWS Config enabled in all target accounts
+- Cross-account IAM role created in member accounts
+
+**Quick Deploy:**
+
+```bash
+# 1. Package Lambda code
+pip install -r requirements.txt -t package/
+cp -r src/inventory package/
+cd package && zip -r ../fedramp-inventory-lambda.zip . && cd ..
+
+# 2. Upload to S3
+aws s3 mb s3://fedramp-lambda-code-<ACCOUNT_ID>
+aws s3 cp fedramp-inventory-lambda.zip s3://fedramp-lambda-code-<ACCOUNT_ID>/
+
+# 3. Deploy CloudFormation stack
+aws cloudformation deploy \
+  --template-file templates/InventoryCollector.yml \
+  --stack-name fedramp-inventory \
+  --parameter-overrides \
+    MasterAccountName=management \
+    DomainAccountId=<MEMBER_ACCOUNT_ID> \
+    DomainAccountName=member \
+    LambdaPayloadLocation=fedramp-lambda-code-<ACCOUNT_ID> \
+    LambdaPayload=fedramp-inventory-lambda.zip \
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
+**What Gets Created:**
+- Lambda function (Python 3.11, 15-minute timeout)
+- S3 bucket for inventory reports (encrypted, 7-year retention)
+- IAM execution role with Config read permissions
+- CloudWatch Event Rule (scheduled: 9 AM & 9 PM UTC)
+- CloudWatch Log Group (90-day retention)
+
+**CloudFormation Parameters:**
+- `MasterAccountName` - Name for management account (default: "Master")
+- `DomainAccountId` - AWS account ID of member account to scan
+- `DomainAccountName` - Name for member account (default: "Domain")
+- `LambdaPayloadLocation` - S3 bucket containing Lambda zip
+- `LambdaPayload` - S3 key for Lambda zip file
+- `ScheduleExpression` - Cron schedule (default: `cron(0 9,21 * * ? *)`)
+
+**Outputs:**
+- `InventoryReportBucket` - S3 bucket where reports are stored
+- `LambdaFunctionName` - Name of the Lambda function
+
+### Option 2: Manual Python Execution (Development/Testing)
+
+Run locally for development or one-off inventory collection:
+
+**Prerequisites:**
+- Python 3.11+
+- AWS credentials configured locally
+- Environment variables set (see below)
+
+**Setup:**
 
 ``` bash
 python -m venv .
-source ./bin/activate
+source ./bin/activate  # On Windows: .\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Install the package, its dependencies and dev dependencies. Dev dependencies are not included in the requirements.txt as pipenv is used for dependency management, and requirements.txt was created without including dev dependencies. For ease of getting up an running though, you can execute the following commands:
+**Run Tests:**
 
 ``` bash
-python -m pip install -r requirements.txt
-python -m pip install pytest
-python -m pip install callee
+pip install pytest callee
 cd src
 python -m pytest -v -s ../tests
 ```
@@ -125,6 +187,20 @@ python -m pytest -v -s ../tests
 If you've got everything installed correctly, you should see output similar to:
 
 ![Unit Test Results](./docs/TestResults.png)
+
+**Execute Inventory Collection:**
+
+```bash
+# Set required environment variables
+export AWS_REGION=us-east-1
+export ACCOUNT_LIST='[{"name":"management","id":"123456789012"}]'
+export CROSS_ACCOUNT_ROLE_NAME=InventoryCollector-for-Lambda
+export REPORT_TARGET_BUCKET_NAME=my-inventory-reports
+export REPORT_TARGET_BUCKET_PATH=inventory-reports
+
+# Run the handler
+python -m inventory.handler
+```
 
 ### Development
 The project was developed using Visual Studio Code and the .vscode directory with three launch configuration is included. Among them is "Run All Tests" configuration which can be used to run all unit tests in the project. Unit tests mock out calls to AWS services so you do not need to worry about tests using the services when executed. A .env.sample file is included which you can use to set the environment variables used by Visual Studio Code. If the .env file is not recognized by Visual Studio Code, ensure that the "python.envFile" setting is set to "${workspaceFolder}/.env".
