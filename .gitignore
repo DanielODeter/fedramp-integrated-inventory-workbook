@@ -3,6 +3,7 @@ package/
 *.zip
 output.json
 *.bat
+!quick-deploy.bat
 *.xlsx
 
 # Ignore MacOS folder

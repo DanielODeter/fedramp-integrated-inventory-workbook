@@ -144,7 +144,26 @@ Additionally, here are notes of other key files/folders not typically found in a
 <details>
 <summary>🏛️ Option 1: CloudFormation Deployment (Recommended for Production)</summary>
 
-Deploy as a fully automated Lambda function with scheduled execution:
+Deploy as a fully automated Lambda function with scheduled execution.
+
+**Quick Start (Automated):**
+
+```bash
+# Linux/Mac
+./quick-deploy.sh <management-account-id> <member-account-id> [aws-profile] [region]
+
+# Windows
+quick-deploy.bat <management-account-id> <member-account-id> [aws-profile] [region]
+
+# Example
+./quick-deploy.sh 123456789012 987654321098 my-profile us-east-1
+```
+
+The script automates all 4 deployment steps below.
+
+---
+
+**Manual Deployment:**
 
 **Prerequisites:**
 - AWS CLI configured with appropriate credentials
