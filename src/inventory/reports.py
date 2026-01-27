@@ -18,6 +18,23 @@ _workbook_template_file_name = os.path.join(_current_dir_name, "SSP-A13-FedRAMP-
 _workbook_output_file_path = os.path.join(tempfile.gettempdir(), "SSP-A13-FedRAMP-Integrated-Inventory.xlsx")
 DEFAULT_REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER = 3
 
+# FedRAMP template column mappings
+COL_UNIQUE_ID = 1
+COL_IP_ADDRESS = 2
+COL_IS_VIRTUAL = 3
+COL_IS_PUBLIC = 4
+COL_DNS_NAME = 5
+COL_MAC_ADDRESS = 7
+COL_AUTHENTICATED_SCAN = 8
+COL_BASELINE_CONFIG = 9
+COL_ASSET_TYPE = 12
+COL_HARDWARE_MODEL = 13
+COL_SOFTWARE_VENDOR = 15
+COL_SOFTWARE_PRODUCT = 16
+COL_IIR_DIAGRAM_LABEL = 18
+COL_NETWORK_ID = 21
+COL_OWNER = 22
+
 class CreateReportCommandHandler():
     def _write_cell_if_value_provided(self, worksheet: Worksheet, column:int, row: int, value: str):
         if value:
@@ -49,21 +66,21 @@ class CreateReportCommandHandler():
         _logger.info(f"writing {len(inventory)} rows into worksheet {report_worksheet_name} starting at row {rowNumber}")
 
         for inventory_row in inventory:
-            self._write_cell_if_value_provided(report_worksheet, 1, rowNumber, inventory_row.unique_id)
-            self._write_cell_if_value_provided(report_worksheet, 2, rowNumber, inventory_row.ip_address)
-            self._write_cell_if_value_provided(report_worksheet, 3, rowNumber, inventory_row.is_virtual)
-            self._write_cell_if_value_provided(report_worksheet, 4, rowNumber, inventory_row.is_public)
-            self._write_cell_if_value_provided(report_worksheet, 5, rowNumber, inventory_row.dns_name)
-            self._write_cell_if_value_provided(report_worksheet, 7, rowNumber, inventory_row.mac_address)
-            self._write_cell_if_value_provided(report_worksheet, 8, rowNumber, inventory_row.authenticated_scan_planned)
-            self._write_cell_if_value_provided(report_worksheet, 9, rowNumber, inventory_row.baseline_config)
-            self._write_cell_if_value_provided(report_worksheet, 12, rowNumber, inventory_row.asset_type)
-            self._write_cell_if_value_provided(report_worksheet, 13, rowNumber, inventory_row.hardware_model)
-            self._write_cell_if_value_provided(report_worksheet, 15, rowNumber, inventory_row.software_vendor)
-            self._write_cell_if_value_provided(report_worksheet, 16, rowNumber, inventory_row.software_product_name)
-            self._write_cell_if_value_provided(report_worksheet, 18, rowNumber, inventory_row.iir_diagram_label)
-            self._write_cell_if_value_provided(report_worksheet, 21, rowNumber, inventory_row.network_id)
-            self._write_cell_if_value_provided(report_worksheet, 22, rowNumber, inventory_row.owner)
+            self._write_cell_if_value_provided(report_worksheet, COL_UNIQUE_ID, rowNumber, inventory_row.unique_id)
+            self._write_cell_if_value_provided(report_worksheet, COL_IP_ADDRESS, rowNumber, inventory_row.ip_address)
+            self._write_cell_if_value_provided(report_worksheet, COL_IS_VIRTUAL, rowNumber, inventory_row.is_virtual)
+            self._write_cell_if_value_provided(report_worksheet, COL_IS_PUBLIC, rowNumber, inventory_row.is_public)
+            self._write_cell_if_value_provided(report_worksheet, COL_DNS_NAME, rowNumber, inventory_row.dns_name)
+            self._write_cell_if_value_provided(report_worksheet, COL_MAC_ADDRESS, rowNumber, inventory_row.mac_address)
+            self._write_cell_if_value_provided(report_worksheet, COL_AUTHENTICATED_SCAN, rowNumber, inventory_row.authenticated_scan_planned)
+            self._write_cell_if_value_provided(report_worksheet, COL_BASELINE_CONFIG, rowNumber, inventory_row.baseline_config)
+            self._write_cell_if_value_provided(report_worksheet, COL_ASSET_TYPE, rowNumber, inventory_row.asset_type)
+            self._write_cell_if_value_provided(report_worksheet, COL_HARDWARE_MODEL, rowNumber, inventory_row.hardware_model)
+            self._write_cell_if_value_provided(report_worksheet, COL_SOFTWARE_VENDOR, rowNumber, inventory_row.software_vendor)
+            self._write_cell_if_value_provided(report_worksheet, COL_SOFTWARE_PRODUCT, rowNumber, inventory_row.software_product_name)
+            self._write_cell_if_value_provided(report_worksheet, COL_IIR_DIAGRAM_LABEL, rowNumber, inventory_row.iir_diagram_label)
+            self._write_cell_if_value_provided(report_worksheet, COL_NETWORK_ID, rowNumber, inventory_row.network_id)
+            self._write_cell_if_value_provided(report_worksheet, COL_OWNER, rowNumber, inventory_row.owner)
 
             rowNumber += 1
 
