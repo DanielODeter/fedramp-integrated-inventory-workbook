@@ -166,7 +166,7 @@ class RdsDataMapper(DataMapper):
                  "is_public": "Yes" if "publiclyAccessible" in config_resource["configuration"] and config_resource["configuration"]["publiclyAccessible"] else "No",                 
                  "hardware_model": config_resource["configuration"].get("dBInstanceClass", ""),                 
                  "software_product_name": f"{config_resource['configuration'].get('engine', 'unknown')}-{config_resource['configuration'].get('engineVersion', 'unknown')}",
-                 "network_id": config_resource['configuration']['dBSubnetGroup']['vpcId'] if "dBSubnetGroup" in config_resource['configuration'] else (config_resource['configuration']['dbsubnetGroup']['vpcId'] if "dbsubnetGroup" in config_resource['configuration'] else ''),
+                 "network_id": config_resource['configuration'].get('dBSubnetGroup', {}).get('vpcId', '') if "dBSubnetGroup" in config_resource['configuration'] else (config_resource['configuration'].get('dbsubnetGroup', {}).get('vpcId', '') if "dbsubnetGroup" in config_resource['configuration'] else ''),
                  "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
                  "owner": _get_tag_value(config_resource["tags"], "owner") }
 
