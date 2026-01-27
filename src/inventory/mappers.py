@@ -11,7 +11,8 @@ _logger = logging.getLogger("inventory.mappers")
 _logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "INFO"), logging.INFO))
 
 def _get_tag_value(tags: dict, tag_name: str) -> str:
-    return next((tag["value"] for tag in tags if tag["key"].casefold() == tag_name.casefold()), '')
+    value = next((tag["value"] for tag in tags if tag["key"].casefold() == tag_name.casefold()), '')
+    return _sanitize_for_excel(value) if value else ''
 
 def _sanitize_for_excel(value: str) -> str:
     """Prevent Excel formula injection by prefixing dangerous characters"""
