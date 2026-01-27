@@ -88,13 +88,13 @@ class DeliverReportCommandHandler():
         if '..' in target_path or target_path.startswith('/'):
             raise ValueError(f"Invalid target path format: {target_path}")
         
-        report_filename = os.path.basename(report_file_name)
-        report_stem = os.path.splitext(report_filename)[0]
-        report_s3_key = f"{target_path}/{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx"
-
         # Validate file path to prevent path traversal
         if os.path.abspath(report_file_name) != os.path.abspath(_workbook_output_file_path):
             raise ValueError(f"Invalid report file path: {report_file_name}")
+        
+        report_filename = os.path.basename(report_file_name)
+        report_stem = os.path.splitext(report_filename)[0]
+        report_s3_key = f"{target_path}/{report_stem}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.xlsx"
         
         _logger.info(f"uploading file '{report_file_name}' to bucket '{target_bucket}' with key '{report_s3_key}'")
 
