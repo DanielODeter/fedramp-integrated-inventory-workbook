@@ -108,7 +108,8 @@ Additionally, this project installs the following software for the purposes of d
 
 </details>
 
-## Overview
+<details>
+<summary>📖 Overview</summary>
 
 This sample shows how you can create a Lambda function to retrieve inventory information to create the integrated inventory spreadsheet which can be used as a separate attachment to the FedRAMP System Security Plan (SSP). This is an enhanced fork of the [original AWS blog post project](https://aws.amazon.com/blogs/publicsector/automating-creation-fedramp-integrated-inventory-workbook/). The spreadsheet template can be found [here](https://www.fedramp.gov/new-integrated-inventory-template/).
 
@@ -116,7 +117,10 @@ This sample populates the inventory spreadsheet with a point in time view of AWS
 
 There are other assets that must be tracked in the spreadsheet (e.g. software running on EC2 instances/containers) which this sample does not gather. The design does lend itself to be extended to gather inventory information from multiple sources for various resource types.
 
-## Contents
+</details>
+
+<details>
+<summary>📁 Project Structure</summary>
 
 This project follows the [src project structure](https://blog.ionelmc.ro/2014/05/25/python-packaging/). In other words, this:
 ```
@@ -132,9 +136,13 @@ Additionally, here are notes of other key files/folders not typically found in a
 
 * **package.sh** - This script bundles the package so that it can be uploaded to Lambda. However, a Lambda package .zip file is already included with the repository. This requires the setup of a virtual environment using pyenv. [AWS Serverless Application Model](https://aws.amazon.com/serverless/sam/) was not used in an effort to minimize the number of concepts introduced.
 
-## Deployment Options
+</details>
 
-### Option 1: CloudFormation Deployment (Recommended for Production)
+<details>
+<summary>🚀 Deployment Options</summary>
+
+<details>
+<summary>🏛️ Option 1: CloudFormation Deployment (Recommended for Production)</summary>
 
 Deploy as a fully automated Lambda function with scheduled execution:
 
@@ -187,7 +195,10 @@ aws cloudformation deploy \
 - `InventoryReportBucket` - S3 bucket where reports are stored
 - `LambdaFunctionName` - Name of the Lambda function
 
-### Option 2: Manual Python Execution (Development/Testing)
+</details>
+
+<details>
+<summary>💻 Option 2: Manual Python Execution (Development/Testing)</summary>
 
 Run locally for development or one-off inventory collection:
 
@@ -230,10 +241,17 @@ export REPORT_TARGET_BUCKET_PATH=inventory-reports
 python -m inventory.handler
 ```
 
-### Development
+</details>
+
+<details>
+<summary>🛠️ Development Setup</summary>
+
 The project was developed using Visual Studio Code and the .vscode directory with three launch configuration is included. Among them is "Run All Tests" configuration which can be used to run all unit tests in the project. Unit tests mock out calls to AWS services so you do not need to worry about tests using the services when executed. A .env.sample file is included which you can use to set the environment variables used by Visual Studio Code. If the .env file is not recognized by Visual Studio Code, ensure that the "python.envFile" setting is set to "${workspaceFolder}/.env".
 
-### Environment Variables
+</details>
+
+<details>
+<summary>⚙️ Environment Variables</summary>
 
 * **AWS_REGION** - AWS region from which the AWS Config resources will be queried
 * **ACCOUNT_LIST** - JSON document containing the list of accounts that need to be queried for inventory with the following structure
@@ -247,7 +265,12 @@ The project was developed using Visual Studio Code and the .vscode directory wit
 * **REPORT_WORKSHEET_NAME (Optional)** - Default of "Inventory". Name of the worksheet in the "SSP-A13-FedRAMP-Integrated-Inventory-Workbook-Template" spreadsheet where inventory data will be populated.
 * **REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER** (Optional) - Default of 3. Row number (not index) of where inventory data will start to be populated.
 
-## Design
+</details>
+
+</details>
+
+<details>
+<summary>🏛️ Design & Architecture</summary>
 
 <details>
 <summary>✅ Items Completed in This Fork</summary>
@@ -313,5 +336,7 @@ The Handler subsequently calls the CreateReportCommandHandler and DeliverReportC
 As depicted above, errors encountered during the retrieval of inventory information from AWS Config, are logged; however, processing continues. Below is a screenshot from CloudWatch showing the log entry with specific sections of the log entry highlighted.
 
 ![Error Log Entry](docs/ErrorLogEntry.png)
+
+</details>
 
 </details>
