@@ -16,9 +16,9 @@ def _get_tag_value(tags: dict, tag_name: str) -> str:
 
 def _sanitize_for_excel(value: str) -> str:
     """Prevent Excel formula injection by prefixing dangerous characters"""
-    if value and value[0] in ('=', '+', '-', '@'):
+    if value and isinstance(value, str) and len(value) > 0 and value[0] in ('=', '+', '-', '@'):
         return f"'{value}"
-    return value
+    return value if value else ''
 
 class InventoryData:
    def __init__(self, *, asset_type=None, unique_id=None, ip_address=None, location=None, is_virtual=None,
