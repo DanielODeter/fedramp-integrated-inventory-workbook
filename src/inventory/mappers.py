@@ -25,22 +25,22 @@ class InventoryData:
                  authenticated_scan_planned=None, dns_name=None, mac_address=None, baseline_config=None,
                  hardware_model=None,
                  is_public=None, network_id=None, iir_diagram_label=None, owner=None, software_product_name=None, software_vendor=None):
-        self.asset_type = asset_type
-        self.unique_id = unique_id
+        self.asset_type = _sanitize_for_excel(asset_type) if asset_type else None
+        self.unique_id = _sanitize_for_excel(unique_id) if unique_id else None
         self.ip_address = ip_address
         self.location = location
         self.is_virtual = is_virtual
         self.authenticated_scan_planned = authenticated_scan_planned
-        self.dns_name = dns_name
+        self.dns_name = _sanitize_for_excel(dns_name) if dns_name else None
         self.mac_address = mac_address
-        self.baseline_config = baseline_config
-        self.hardware_model = hardware_model
+        self.baseline_config = _sanitize_for_excel(baseline_config) if baseline_config else None
+        self.hardware_model = _sanitize_for_excel(hardware_model) if hardware_model else None
         self.is_public = is_public
         self.network_id = network_id
-        self.iir_diagram_label = iir_diagram_label
-        self.owner = owner
-        self.software_product_name = software_product_name
-        self.software_vendor = software_vendor
+        self.iir_diagram_label = _sanitize_for_excel(iir_diagram_label) if iir_diagram_label else None
+        self.owner = _sanitize_for_excel(owner) if owner else None
+        self.software_product_name = _sanitize_for_excel(software_product_name) if software_product_name else None
+        self.software_vendor = _sanitize_for_excel(software_vendor) if software_vendor else None
 
 class DataMapper(ABC):
     @abstractmethod
