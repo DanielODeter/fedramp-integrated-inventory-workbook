@@ -105,11 +105,7 @@ class DeliverReportCommandHandler():
         if '..' in target_path or target_path.startswith('/'):
             raise ValueError(f"Invalid target path format: {target_path}")
         
-        # Validate file path to prevent path traversal
-        if os.path.abspath(report_file_name) != os.path.abspath(_workbook_output_file_path):
-            raise ValueError(f"Invalid report file path: {report_file_name}")
-        
-        # Use the validated expected path for file operations
+        # Use the expected report file path for all operations
         validated_path = _workbook_output_file_path
         
         report_filename = os.path.basename(validated_path)
