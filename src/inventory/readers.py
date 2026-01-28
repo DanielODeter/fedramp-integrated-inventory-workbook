@@ -97,15 +97,15 @@ class AwsConfigInventoryReader():
 
                 if not next_token:
                     break
-        except (ClientError, ValueError, KeyError) as ex:
-            _logger.error("Received error: %s while retrieving resources from account %s, moving onto next account.", ex, account_id, exc_info=True)
-
+        except ClientError as ex:
+            _logger.error("Received error: %s while retrieving resources from account %s, returning empty results.", ex, account_id, exc_info=True)
             yield []
 
     def _get_aws_partition(self):
         arn_parts = self._lambda_context.invoked_function_arn.split(":")
-
-        return arn_parts[1] if len(arn_parts) >= 2 else ''
+        if len(arn_parts) < 2:
+            raise ValueError(f"Invalid Lambda function ARN format: {self._lambda_context.invoked_function_arn}")
+        return arn_parts[1]
 
     def get_resources_from_all_accounts(self) -> List[InventoryData]:
         _logger.info("starting retrieval of inventory from AWS Config")

@@ -178,15 +178,15 @@ class RdsDataMapper(DataMapper):
             network_id = config.get('dbsubnetGroup', {}).get('vpcId', '')
         
         data = { "asset_type": "RDS",
-                 "unique_id": config_resource["arn"],
+                 "unique_id": config_resource.get("arn", ""),
                  "is_virtual": "Yes",
                  "software_vendor": "AWS",
                  "is_public": "Yes" if "publiclyAccessible" in config and config["publiclyAccessible"] else "No",
                  "hardware_model": config.get("dBInstanceClass", ""),
                  "software_product_name": f"{config.get('engine', 'unknown')}-{config.get('engineVersion', 'unknown')}",
                  "network_id": network_id,
-                 "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
-                 "owner": _get_tag_value(config_resource["tags"], "owner") }
+                 "iir_diagram_label": _get_tag_value(config_resource.get("tags", []), "iir_diagram_label"),
+                 "owner": _get_tag_value(config_resource.get("tags", []), "owner") }
 
         return [InventoryData(**data)]
 
@@ -196,13 +196,13 @@ class DynamoDbTableDataMapper(DataMapper):
 
     def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
         data = { "asset_type": "DynamoDB",
-                 "unique_id": config_resource["arn"],
+                 "unique_id": config_resource.get("arn", ""),
                  "is_virtual": "Yes",
                  "is_public": "No",
                  "software_vendor": "AWS",
                  "software_product_name": "DynamoDB",
-                 "iir_diagram_label": _get_tag_value(config_resource["tags"], "iir_diagram_label"),
-                 "owner": _get_tag_value(config_resource["tags"], "owner") }
+                 "iir_diagram_label": _get_tag_value(config_resource.get("tags", []), "iir_diagram_label"),
+                 "owner": _get_tag_value(config_resource.get("tags", []), "owner") }
 
         return [InventoryData(**data)]
 
@@ -240,7 +240,10 @@ class S3DataMapper(DataMapper):
         tags = config_resource.get("tags", [])
         
         is_public = "No"
-        if not public_access.get("blockPublicAcls", True) or not public_access.get("blockPublicPolicy", True):
+        if (not public_access.get("blockPublicAcls", True) or 
+            not public_access.get("ignorePublicAcls", True) or 
+            not public_access.get("blockPublicPolicy", True) or 
+            not public_access.get("restrictPublicBuckets", True)):
             is_public = "Yes"
         
         data = {
@@ -310,7 +313,7 @@ class RedshiftDataMapper(DataMapper):
         data = {
             "asset_type": "Redshift",
             "unique_id": config_resource.get("arn", ""),
-            "ip_address": endpoint.get("address", ""),
+            "dns_name": endpoint.get("address", ""),
             "is_virtual": "Yes",
             "authenticated_scan_planned": "Yes",
             "is_public": "Yes" if config.get("publiclyAccessible", False) else "No",
@@ -382,17 +385,26 @@ class ApiGatewayDataMapper(DataMapper):
 
     def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
         config = config_resource.get("configuration", {})
-        endpoint_config = config.get("endpointConfiguration", {})
-        endpoint_types = endpoint_config.get("types", [])
         tags = config_resource.get("tags", [])
+        
+        # V1 (RestApi) uses endpointConfiguration.types, V2 uses different structure
+        if config_resource.get("resourceType") == "AWS::ApiGateway::RestApi":
+            endpoint_config = config.get("endpointConfiguration", {})
+            endpoint_types = endpoint_config.get("types", [])
+            is_public = "No" if "PRIVATE" in endpoint_types else "Yes"
+            protocol_type = "REST"
+        else:  # AWS::ApiGatewayV2::Api
+            # V2 APIs are public by default unless using VPC links
+            is_public = "Yes"
+            protocol_type = config.get("protocolType", "HTTP")
         
         data = {
             "asset_type": "API Gateway",
             "unique_id": config_resource.get("arn", ""),
             "is_virtual": "Yes",
-            "is_public": "No" if "PRIVATE" in endpoint_types else "Yes",
+            "is_public": is_public,
             "software_vendor": "AWS",
-            "software_product_name": config.get("protocolType", "REST"),
+            "software_product_name": protocol_type,
             "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
             "owner": _get_tag_value(tags, "owner")
         }

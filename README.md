@@ -141,8 +141,29 @@ Additionally, here are notes of other key files/folders not typically found in a
 <details>
 <summary>🚀 Deployment Options (How to Install)</summary>
 
+## Choose Your Deployment Method
+
+Two deployment options are available based on your AWS environment:
+
+| Feature | **Option 1: Cross-Account** | **Option 2: Config Aggregator** |
+|---------|------------------------------|----------------------------------|
+| **When to Use** | Organizations without AWS Organizations, or need granular per-account control | Organizations using AWS Organizations (most FedRAMP customers) |
+| **Setup Complexity** | Complex - requires IAM roles in each member account | Simple - management account only |
+| **Performance** | Slower - sequential account processing | Faster - parallel data collection |
+| **Cost** | Higher - multiple API calls per account | Lower - single aggregated query |
+| **IAM Requirements** | Cross-account role in every member account | Config Aggregator authorization (automatic with Orgs) |
+| **Best For** | Standalone accounts, non-Org environments | AWS Organizations with 3+ accounts |
+
+---
+
 <details>
-<summary>🏛️ Option 1: CloudFormation Deployment (Recommended for Production)</summary>
+<summary>🏛️ Option 1: Cross-Account Deployment</summary>
+
+**When to Use:**
+- ✅ Organizations without AWS Organizations
+- ✅ Need granular per-account IAM control
+- ✅ Scanning specific accounts (not entire organization)
+- ✅ Testing/development environments
 
 Deploy as a fully automated Lambda function with scheduled execution.
 
@@ -218,6 +239,85 @@ aws cloudformation deploy \
 **Outputs:**
 - `InventoryReportBucket` - S3 bucket where reports are stored
 - `LambdaFunctionName` - Name of the Lambda function
+
+</details>
+
+<details>
+<summary>🚀 Option 2: Config Aggregator Deployment (Recommended)</summary>
+
+**When to Use:**
+- ✅ Using AWS Organizations
+- ✅ Scanning 3+ accounts
+- ✅ Want simpler deployment (no member account setup)
+- ✅ Need faster performance
+- ✅ Want lower costs
+- ✅ Production FedRAMP environments
+
+**Prerequisites:**
+- AWS Organizations enabled
+- AWS Config Aggregator created (see setup below)
+- AWS Config enabled in all member accounts
+
+**Step 1: Create Config Aggregator (One-Time Setup)**
+
+```bash
+# Option A: Via AWS Console
+# 1. Go to AWS Config console
+# 2. Navigate to 'Aggregators' in the left menu
+# 3. Click 'Add aggregator'
+# 4. Choose 'Add an aggregator for my organization'
+# 5. Name it 'OrganizationConfigAggregator'
+
+# Option B: Via AWS CLI
+aws configservice put-configuration-aggregator \
+  --configuration-aggregator-name OrganizationConfigAggregator \
+  --organization-aggregation-source '{"RoleArn":"arn:aws:iam::<MGMT_ACCOUNT_ID>:role/aws-service-role/organizations.amazonaws.com/AWSServiceRoleForOrganizations","AllAwsRegions":true}' \
+  --region us-east-1
+```
+
+**Step 2: Deploy Inventory Solution**
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/DanielODeter/fedramp-integrated-inventory-workbook.git
+cd fedramp-integrated-inventory-workbook
+
+# 2. Run the aggregator deployment script
+# Linux/Mac
+./quick-deploy-aggregator.sh <management-account-id> [aws-profile] [region] [aggregator-name]
+
+# Windows
+quick-deploy-aggregator.bat <management-account-id> [aws-profile] [region] [aggregator-name]
+
+# Example
+./quick-deploy-aggregator.sh 123456789012 my-profile us-east-1 OrganizationConfigAggregator
+```
+
+**What Gets Created:**
+- Lambda function (Python 3.11, 15-minute timeout)
+- S3 bucket for inventory reports (encrypted, 90-day retention)
+- IAM execution role with Config Aggregator read permissions
+- EventBridge Rule (scheduled: monthly on 1st at 2 AM UTC)
+- CloudWatch Log Group (90-day retention)
+
+**Key Differences from Cross-Account:**
+- ✅ No cross-account IAM roles needed
+- ✅ No ACCOUNT_LIST environment variable needed
+- ✅ Single API call instead of N calls (one per account)
+- ✅ Faster execution time
+- ✅ Simpler IAM permissions
+- ✅ Automatic discovery of all Organization accounts
+
+**CloudFormation Parameters:**
+- `MasterAccountName` - Name for management account (default: "management")
+- `ConfigAggregatorName` - Name of Config Aggregator (default: "OrganizationConfigAggregator")
+- `LambdaPayloadLocation` - S3 bucket containing Lambda zip
+- `LambdaPayload` - S3 key for Lambda zip file
+
+**Outputs:**
+- `LambdaFunctionName` - Name of the Lambda function
+- `ReportsBucketName` - S3 bucket where reports are stored
+- `ConfigAggregatorUsed` - Config Aggregator being used
 
 </details>
 

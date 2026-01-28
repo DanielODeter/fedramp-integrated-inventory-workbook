@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: FedRAMP Integrated Inventory Workbook - Config Aggregator Version (Simplified deployment for AWS Organizations)
+
+Parameters:
+  MasterAccountName:
+    Description: Name of the master/management account
+    Type: String
+    Default: management
+
+  ConfigAggregatorName:
+    Description: Name of the AWS Config Aggregator (must already exist)
+    Type: String
+    Default: OrganizationConfigAggregator
+
+  LambdaPayloadLocation:
+    Description: S3 bucket containing Lambda deployment package
+    Type: String
+
+  LambdaPayload:
+    Description: S3 key for Lambda deployment package
+    Type: String
+    Default: fedramp-inventory-lambda.zip
+
+Resources:
+  # S3 Bucket for inventory reports
+  InventoryReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub integrated-inventory-reports-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldReports
+            Status: Enabled
+            ExpirationInDays: 90
+
+  # IAM Role for Lambda
+  InventoryCollectorLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub InventoryCollector-Aggregator-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ConfigAggregatorAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - config:SelectAggregateResourceConfig
+                  - config:DescribeConfigurationAggregators
+                Resource: "*"
+        - PolicyName: S3ReportAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource: !Sub ${InventoryReportsBucket.Arn}/*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub arn:${AWS::Partition}:s3:::${LambdaPayloadLocation}/*
+
+  # Lambda Function
+  InventoryCollectorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub InventoryCollector-Aggregator-${AWS::StackName}
+      Runtime: python3.11
+      Handler: inventory.handler.lambda_handler
+      Role: !GetAtt InventoryCollectorLambdaRole.Arn
+      Timeout: 900
+      MemorySize: 512
+      Code:
+        S3Bucket: !Ref LambdaPayloadLocation
+        S3Key: !Ref LambdaPayload
+      Environment:
+        Variables:
+          MASTER_ACCOUNT_NAME: !Ref MasterAccountName
+          CONFIG_AGGREGATOR_NAME: !Ref ConfigAggregatorName
+          REPORT_BUCKET: !Ref InventoryReportsBucket
+          USE_AGGREGATOR: "true"
+          LOG_LEVEL: INFO
+
+  # EventBridge Rule for monthly execution
+  MonthlyScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub InventoryCollector-Monthly-${AWS::StackName}
+      Description: Trigger FedRAMP inventory collection monthly
+      ScheduleExpression: cron(0 2 1 * ? *)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt InventoryCollectorFunction.Arn
+          Id: InventoryCollectorTarget
+
+  # Permission for EventBridge to invoke Lambda
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref InventoryCollectorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MonthlyScheduleRule.Arn
+
+Outputs:
+  LambdaFunctionName:
+    Description: Name of the Lambda function
+    Value: !Ref InventoryCollectorFunction
+
+  LambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt InventoryCollectorFunction.Arn
+
+  ReportsBucketName:
+    Description: S3 bucket for inventory reports
+    Value: !Ref InventoryReportsBucket
+
+  ReportsBucketArn:
+    Description: ARN of the reports bucket
+    Value: !GetAtt InventoryReportsBucket.Arn
+
+  ScheduleRuleName:
+    Description: EventBridge rule for monthly execution
+    Value: !Ref MonthlyScheduleRule
+
+  ConfigAggregatorUsed:
+    Description: Config Aggregator being used
+    Value: !Ref ConfigAggregatorName

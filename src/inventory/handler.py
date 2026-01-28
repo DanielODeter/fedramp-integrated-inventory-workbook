@@ -3,7 +3,9 @@
 # This sample code is made available under the MIT-0 license. See the LICENSE file.
 import logging
 import json
+import os
 from inventory.readers import AwsConfigInventoryReader
+from inventory.aggregator_reader import AwsConfigAggregatorInventoryReader
 from inventory.reports import CreateReportCommandHandler, DeliverReportCommandHandler
 
 _logger = logging.getLogger("inventory.handler")
@@ -12,7 +14,17 @@ _logger.setLevel(logging.INFO)
 def lambda_handler(event, context):
     try:
         _logger.info("Starting FedRAMP inventory collection")
-        inventory = AwsConfigInventoryReader(lambda_context=context).get_resources_from_all_accounts()
+        
+        # Choose reader based on deployment type
+        use_aggregator = os.environ.get('USE_AGGREGATOR', 'false').lower() == 'true'
+        
+        if use_aggregator:
+            _logger.info("Using Config Aggregator reader")
+            inventory = AwsConfigAggregatorInventoryReader(lambda_context=context).get_resources_from_all_accounts()
+        else:
+            _logger.info("Using cross-account reader")
+            inventory = AwsConfigInventoryReader(lambda_context=context).get_resources_from_all_accounts()
+        
         report_path = CreateReportCommandHandler().execute(inventory)
         report_url = DeliverReportCommandHandler().execute(report_path)
         
