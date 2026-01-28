@@ -182,14 +182,14 @@ Additionally, here are notes of other key files/folders not typically found in a
 
 Two deployment options are available based on your AWS environment:
 
-| Feature | **Option 1: Cross-Account** | **Option 2: Config Aggregator** |
-|---------|------------------------------|----------------------------------|
-| **When to Use** | Organizations without AWS Organizations, or need granular per-account control | Organizations using AWS Organizations (most FedRAMP customers) |
-| **Setup Complexity** | Complex - requires IAM roles in each member account | Simple - management account only |
-| **Performance** | Slower - sequential account processing | Faster - parallel data collection |
-| **Cost** | Higher - multiple API calls per account | Lower - single aggregated query |
-| **IAM Requirements** | Cross-account role in every member account | Config Aggregator authorization (automatic with Orgs) |
-| **Best For** | Standalone accounts, non-Org environments | AWS Organizations with 3+ accounts |
+| Feature | **Option 1: Cross-Account** | **Option 2: Config Aggregator** | **Option 3: Manual Python** |
+|---------|------------------------------|----------------------------------|------------------------------|
+| **When to Use** | Organizations without AWS Organizations, or need granular per-account control | Organizations using AWS Organizations (most FedRAMP customers) | Development, testing, one-off inventory collection |
+| **Setup Complexity** | Complex - requires IAM roles in each member account | Simple - management account only | Minimal - local Python environment |
+| **Performance** | Slower - sequential account processing | Faster - parallel data collection | Same as Option 1 (uses cross-account) |
+| **Cost** | Higher - multiple API calls per account | Lower - single aggregated query | Same as Option 1 |
+| **IAM Requirements** | Cross-account role in every member account | Config Aggregator authorization (automatic with Orgs) | Local AWS credentials with cross-account role |
+| **Best For** | Standalone accounts, non-Org environments | AWS Organizations with 3+ accounts | Local development, debugging, ad-hoc reports |
 
 ---
 
