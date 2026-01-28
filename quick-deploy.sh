@@ -97,7 +97,7 @@ if [ -n "$MEMBER_PROFILE" ]; then
     # Attach policy
     aws iam attach-role-policy \
         --role-name InventoryCollector-for-Lambda \
-        --policy-arn arn:aws:iam::aws:policy/service-role/ConfigRole \
+        --policy-arn arn:aws:iam::aws:policy/service-role/AWSConfigRole \
         --profile ${MEMBER_PROFILE} \
         --region ${AWS_REGION} 2>/dev/null || true
     
