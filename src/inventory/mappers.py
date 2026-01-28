@@ -205,3 +205,216 @@ class DynamoDbTableDataMapper(DataMapper):
                  "owner": _get_tag_value(config_resource["tags"], "owner") }
 
         return [InventoryData(**data)]
+
+class LambdaDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::Lambda::Function"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        vpc_config = config.get("vpcConfig", {})
+        tags = config_resource.get("tags", [])
+        
+        data = {
+            "asset_type": "Lambda",
+            "unique_id": config_resource.get("arn", ""),
+            "is_virtual": "Yes",
+            "authenticated_scan_planned": "Yes",
+            "is_public": "No" if vpc_config.get("vpcId") else "Yes",
+            "network_id": vpc_config.get("vpcId", ""),
+            "software_vendor": "AWS",
+            "software_product_name": f"Lambda-{config.get('runtime', 'unknown')}",
+            "hardware_model": f"{config.get('memorySize', 'unknown')}MB",
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class S3DataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::S3::Bucket"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        public_access = config.get("publicAccessBlockConfiguration", {})
+        tags = config_resource.get("tags", [])
+        
+        is_public = "No"
+        if not public_access.get("blockPublicAcls", True) or not public_access.get("blockPublicPolicy", True):
+            is_public = "Yes"
+        
+        data = {
+            "asset_type": "S3",
+            "unique_id": config_resource.get("arn", ""),
+            "dns_name": f"{config.get('name', '')}.s3.amazonaws.com",
+            "is_virtual": "Yes",
+            "is_public": is_public,
+            "software_vendor": "AWS",
+            "software_product_name": "S3",
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class EfsDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::EFS::FileSystem"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        tags = config_resource.get("tags", [])
+        
+        data = {
+            "asset_type": "EFS",
+            "unique_id": config_resource.get("arn", ""),
+            "is_virtual": "Yes",
+            "is_public": "No",
+            "software_vendor": "AWS",
+            "software_product_name": "EFS",
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class EksDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::EKS::Cluster"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        resources_vpc = config.get("resourcesVpcConfig", {})
+        tags = config_resource.get("tags", [])
+        
+        data = {
+            "asset_type": "EKS",
+            "unique_id": config_resource.get("arn", ""),
+            "is_virtual": "Yes",
+            "authenticated_scan_planned": "Yes",
+            "is_public": "Yes" if resources_vpc.get("endpointPublicAccess", False) else "No",
+            "network_id": resources_vpc.get("vpcId", ""),
+            "software_vendor": "AWS",
+            "software_product_name": f"EKS-{config.get('version', 'unknown')}",
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class RedshiftDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::Redshift::Cluster"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        endpoint = config.get("endpoint", {})
+        tags = config_resource.get("tags", [])
+        
+        data = {
+            "asset_type": "Redshift",
+            "unique_id": config_resource.get("arn", ""),
+            "ip_address": endpoint.get("address", ""),
+            "is_virtual": "Yes",
+            "authenticated_scan_planned": "Yes",
+            "is_public": "Yes" if config.get("publiclyAccessible", False) else "No",
+            "network_id": config.get("vpcId", ""),
+            "software_vendor": "AWS",
+            "software_product_name": "Redshift",
+            "hardware_model": config.get("nodeType", ""),
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class ElastiCacheDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::ElastiCache::CacheCluster", "AWS::ElastiCache::ReplicationGroup"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        tags = config_resource.get("tags", [])
+        
+        engine = config.get('engine', config.get('Engine', 'unknown'))
+        node_type = config.get("cacheNodeType", config.get("CacheNodeType", ""))
+        
+        data = {
+            "asset_type": "ElastiCache",
+            "unique_id": config_resource.get("arn", ""),
+            "is_virtual": "Yes",
+            "authenticated_scan_planned": "Yes",
+            "is_public": "No",
+            "software_vendor": "AWS",
+            "software_product_name": f"ElastiCache-{engine}",
+            "hardware_model": node_type,
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class OpenSearchDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::Elasticsearch::Domain", "AWS::OpenSearchService::Domain"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        vpc_options = config.get("vpcOptions", config.get("VPCOptions", {}))
+        tags = config_resource.get("tags", [])
+        
+        vpc_id = vpc_options.get("vpcId", vpc_options.get("VPCId", ""))
+        endpoint = config.get("endpoint", config.get("Endpoint", ""))
+        version = config.get('engineVersion', config.get('ElasticsearchVersion', 'unknown'))
+        
+        data = {
+            "asset_type": "OpenSearch",
+            "unique_id": config_resource.get("arn", ""),
+            "dns_name": endpoint,
+            "is_virtual": "Yes",
+            "authenticated_scan_planned": "Yes",
+            "is_public": "No" if vpc_id else "Yes",
+            "network_id": vpc_id,
+            "software_vendor": "AWS",
+            "software_product_name": f"OpenSearch-{version}",
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class ApiGatewayDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::ApiGateway::RestApi", "AWS::ApiGatewayV2::Api"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        endpoint_config = config.get("endpointConfiguration", {})
+        endpoint_types = endpoint_config.get("types", [])
+        tags = config_resource.get("tags", [])
+        
+        data = {
+            "asset_type": "API Gateway",
+            "unique_id": config_resource.get("arn", ""),
+            "is_virtual": "Yes",
+            "is_public": "No" if "PRIVATE" in endpoint_types else "Yes",
+            "software_vendor": "AWS",
+            "software_product_name": config.get("protocolType", "REST"),
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]
+
+class CloudFrontDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::CloudFront::Distribution"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        tags = config_resource.get("tags", [])
+        
+        data = {
+            "asset_type": "CloudFront",
+            "unique_id": config_resource.get("arn", ""),
+            "dns_name": config.get("domainName", ""),
+            "is_virtual": "Yes",
+            "is_public": "Yes",
+            "software_vendor": "AWS",
+            "software_product_name": "CloudFront",
+            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "owner": _get_tag_value(tags, "owner")
+        }
+        return [InventoryData(**data)]

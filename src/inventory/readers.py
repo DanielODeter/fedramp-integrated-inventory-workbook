@@ -7,7 +7,9 @@ import os
 from typing import Iterator, List, Optional
 import boto3
 from botocore.exceptions import ClientError
-from  inventory.mappers import DataMapper, EC2DataMapper, ElbDataMapper, DynamoDbTableDataMapper, InventoryData, RdsDataMapper
+from  inventory.mappers import (DataMapper, EC2DataMapper, ElbDataMapper, DynamoDbTableDataMapper, InventoryData, RdsDataMapper,
+                                 LambdaDataMapper, S3DataMapper, EfsDataMapper, EksDataMapper, RedshiftDataMapper,
+                                 ElastiCacheDataMapper, OpenSearchDataMapper, ApiGatewayDataMapper, CloudFrontDataMapper)
 
 _logger = logging.getLogger("inventory.readers")
 log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
@@ -22,7 +24,12 @@ class AwsConfigInventoryReader():
         self._lambda_context = lambda_context
         self._sts_client = sts_client if sts_client is not None else boto3.client('sts')
         if mappers is None:
-            mappers = [EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper()]
+            mappers = [
+                EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper(),
+                LambdaDataMapper(), S3DataMapper(), EfsDataMapper(), EksDataMapper(),
+                RedshiftDataMapper(), ElastiCacheDataMapper(), OpenSearchDataMapper(),
+                ApiGatewayDataMapper(), CloudFrontDataMapper()
+            ]
         self._mappers: List[DataMapper] = mappers
 
     # Moved into it's own method to make it easier to mock boto3 client
@@ -57,7 +64,19 @@ class AwsConfigInventoryReader():
                 "'AWS::ElasticLoadBalancing::LoadBalancer', "
                 "'AWS::DynamoDB::Table', "
                 "'AWS::RDS::DBInstance', "
-                "'AWS::RDS::DBCluster')"
+                "'AWS::RDS::DBCluster', "
+                "'AWS::Lambda::Function', "
+                "'AWS::S3::Bucket', "
+                "'AWS::EFS::FileSystem', "
+                "'AWS::EKS::Cluster', "
+                "'AWS::Redshift::Cluster', "
+                "'AWS::ElastiCache::CacheCluster', "
+                "'AWS::ElastiCache::ReplicationGroup', "
+                "'AWS::Elasticsearch::Domain', "
+                "'AWS::OpenSearchService::Domain', "
+                "'AWS::ApiGateway::RestApi', "
+                "'AWS::ApiGatewayV2::Api', "
+                "'AWS::CloudFront::Distribution')"
             )
             while True:
                 resources_result = config_client.select_resource_config(
