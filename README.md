@@ -113,9 +113,43 @@ Additionally, this project installs the following software for the purposes of d
 
 This sample shows how you can create a Lambda function to retrieve inventory information to create the integrated inventory spreadsheet which can be used as a separate attachment to the FedRAMP System Security Plan (SSP). This is an enhanced fork of the [original AWS blog post project](https://aws.amazon.com/blogs/publicsector/automating-creation-fedramp-integrated-inventory-workbook/). The spreadsheet template can be found [here](https://www.fedramp.gov/new-integrated-inventory-template/).
 
-This sample populates the inventory spreadsheet with a point in time view of AWS resources spanning multiple accounts. **25 resource types** are now supported (see list above).
+This sample populates the inventory spreadsheet with a point in time view of AWS resources spanning multiple accounts. **15 resource types** are now supported across compute, storage, database, and network categories.
 
-There are other assets that must be tracked in the spreadsheet (e.g. software running on EC2 instances/containers) which this sample does not gather. The design does lend itself to be extended to gather inventory information from multiple sources for various resource types.
+### Deployment Models
+
+Two deployment architectures are available to fit different organizational structures:
+
+**1. Cross-Account Model** - Traditional approach using IAM role assumption
+- Lambda assumes roles into each member account sequentially
+- Requires cross-account IAM role in every member account
+- Best for: Standalone accounts, non-AWS Organizations environments, or when granular per-account control is needed
+- Trade-offs: More complex setup, slower execution, higher API costs
+
+**2. Config Aggregator Model** (Recommended) - Simplified approach using AWS Organizations
+- Lambda queries a single Config Aggregator for all accounts
+- No cross-account roles needed - automatic authorization via AWS Organizations
+- Best for: AWS Organizations with 3+ accounts, production FedRAMP environments
+- Benefits: Simpler deployment, faster execution, lower costs, automatic account discovery
+
+See the [Deployment Options](#-deployment-options-how-to-install) section below for detailed comparison and setup instructions.
+
+### What Gets Collected
+
+The solution automatically discovers and inventories:
+- **Compute**: EC2 instances, Lambda functions, EKS clusters
+- **Storage**: S3 buckets, EFS file systems
+- **Database**: RDS, DynamoDB, Redshift, ElastiCache, OpenSearch
+- **Network**: Load balancers, API Gateway, CloudFront, NAT Gateways, Network Interfaces
+
+For each resource, the inventory captures:
+- Asset type and unique identifier (ARN)
+- IP addresses and DNS names
+- Public/private accessibility
+- VPC/network configuration
+- Tags (owner, IIR diagram label)
+- Hardware/software details
+
+**Note**: Software running on EC2 instances/containers must be tracked separately. This solution focuses on AWS infrastructure resources. The design is extensible to add custom data sources.
 
 </details>
 
