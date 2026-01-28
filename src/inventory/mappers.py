@@ -418,3 +418,79 @@ class CloudFrontDataMapper(DataMapper):
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
+
+class NatGatewayDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::EC2::NatGateway"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        tags = config_resource.get("tags", [])
+        addresses = config.get("natGatewayAddresses", [])
+        
+        data_list: List[InventoryData] = []
+        
+        if addresses:
+            for address in addresses:
+                data = {
+                    "asset_type": "NAT Gateway",
+                    "unique_id": config_resource.get("arn", ""),
+                    "ip_address": address.get("publicIp", ""),
+                    "is_virtual": "Yes",
+                    "is_public": "Yes",
+                    "network_id": config.get("vpcId", ""),
+                    "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                    "owner": _get_tag_value(tags, "owner")
+                }
+                data_list.append(InventoryData(**data))
+        else:
+            data = {
+                "asset_type": "NAT Gateway",
+                "unique_id": config_resource.get("arn", ""),
+                "is_virtual": "Yes",
+                "is_public": "Yes",
+                "network_id": config.get("vpcId", ""),
+                "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                "owner": _get_tag_value(tags, "owner")
+            }
+            data_list.append(InventoryData(**data))
+        
+        return data_list
+
+class NetworkInterfaceDataMapper(DataMapper):
+    def _get_supported_resource_type(self) -> List[str]:
+        return ["AWS::EC2::NetworkInterface"]
+
+    def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
+        config = config_resource.get("configuration", {})
+        tags = config_resource.get("tags", [])
+        private_ips = config.get("privateIpAddresses", [])
+        
+        data_list: List[InventoryData] = []
+        
+        for ip_info in private_ips:
+            data = {
+                "asset_type": "Network Interface",
+                "unique_id": config_resource.get("arn", ""),
+                "ip_address": ip_info.get("privateIpAddress", ""),
+                "is_virtual": "Yes",
+                "mac_address": config.get("macAddress", ""),
+                "network_id": config.get("vpcId", ""),
+                "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                "owner": _get_tag_value(tags, "owner")
+            }
+            
+            association = ip_info.get("association", {})
+            if association.get("publicIp"):
+                data["is_public"] = "Yes"
+            else:
+                data["is_public"] = "No"
+            
+            data_list.append(InventoryData(**data))
+            
+            if association.get("publicIp"):
+                public_data = copy.copy(data)
+                public_data["ip_address"] = association["publicIp"]
+                data_list.append(InventoryData(**public_data))
+        
+        return data_list

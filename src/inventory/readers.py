@@ -9,7 +9,8 @@ import boto3
 from botocore.exceptions import ClientError
 from  inventory.mappers import (DataMapper, EC2DataMapper, ElbDataMapper, DynamoDbTableDataMapper, InventoryData, RdsDataMapper,
                                  LambdaDataMapper, S3DataMapper, EfsDataMapper, EksDataMapper, RedshiftDataMapper,
-                                 ElastiCacheDataMapper, OpenSearchDataMapper, ApiGatewayDataMapper, CloudFrontDataMapper)
+                                 ElastiCacheDataMapper, OpenSearchDataMapper, ApiGatewayDataMapper, CloudFrontDataMapper,
+                                 NatGatewayDataMapper, NetworkInterfaceDataMapper)
 
 _logger = logging.getLogger("inventory.readers")
 log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
@@ -28,7 +29,8 @@ class AwsConfigInventoryReader():
                 EC2DataMapper(), ElbDataMapper(), DynamoDbTableDataMapper(), RdsDataMapper(),
                 LambdaDataMapper(), S3DataMapper(), EfsDataMapper(), EksDataMapper(),
                 RedshiftDataMapper(), ElastiCacheDataMapper(), OpenSearchDataMapper(),
-                ApiGatewayDataMapper(), CloudFrontDataMapper()
+                ApiGatewayDataMapper(), CloudFrontDataMapper(), NatGatewayDataMapper(),
+                NetworkInterfaceDataMapper()
             ]
         self._mappers: List[DataMapper] = mappers
 
@@ -76,7 +78,9 @@ class AwsConfigInventoryReader():
                 "'AWS::OpenSearchService::Domain', "
                 "'AWS::ApiGateway::RestApi', "
                 "'AWS::ApiGatewayV2::Api', "
-                "'AWS::CloudFront::Distribution')"
+                "'AWS::CloudFront::Distribution', "
+                "'AWS::EC2::NatGateway', "
+                "'AWS::EC2::NetworkInterface')"
             )
             while True:
                 resources_result = config_client.select_resource_config(
