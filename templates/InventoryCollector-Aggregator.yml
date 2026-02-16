@@ -100,6 +100,8 @@ Resources:
           MASTER_ACCOUNT_NAME: !Ref MasterAccountName
           CONFIG_AGGREGATOR_NAME: !Ref ConfigAggregatorName
           REPORT_BUCKET: !Ref InventoryReportsBucket
+          REPORT_TARGET_BUCKET_NAME: !Ref InventoryReportsBucket
+          REPORT_TARGET_BUCKET_PATH: inventory-reports
           USE_AGGREGATOR: "true"
           LOG_LEVEL: INFO
 
