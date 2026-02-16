@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - 2025-01-15
+## [1.0.1] - 2025-01-15
 
 ### Changed
 - Added execute permission to `quick-deploy-aggregator.sh` script
