@@ -30,7 +30,7 @@ class InventoryData:
    def __init__(self, *, asset_type=None, unique_id=None, ip_address=None, location=None, is_virtual=None,
                  authenticated_scan_planned=None, dns_name=None, mac_address=None, baseline_config=None,
                  hardware_model=None,
-                 is_public=None, network_id=None, iir_diagram_label=None, owner=None, software_product_name=None, software_vendor=None):
+                 is_public=None, network_id=None, function=None, owner=None, software_product_name=None, software_vendor=None):
         self.asset_type = _sanitize_for_excel(asset_type) if asset_type else None
         self.unique_id = _sanitize_for_excel(unique_id) if unique_id else None
         self.ip_address = ip_address
@@ -43,7 +43,7 @@ class InventoryData:
         self.hardware_model = _sanitize_for_excel(hardware_model) if hardware_model else None
         self.is_public = is_public
         self.network_id = network_id
-        self.iir_diagram_label = _sanitize_for_excel(iir_diagram_label) if iir_diagram_label else None
+        self.function = _sanitize_for_excel(function) if function else None
         self.owner = _sanitize_for_excel(owner) if owner else None
         self.software_product_name = _sanitize_for_excel(software_product_name) if software_product_name else None
         self.software_vendor = _sanitize_for_excel(software_vendor) if software_vendor else None
@@ -94,7 +94,7 @@ class EC2DataMapper(DataMapper):
                              "baseline_config": config.get("imageId", ""),
                              "hardware_model": config.get("instanceType", ""),
                              "network_id": config.get("vpcId", ""),
-                             "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                             "function": _get_tag_value(tags, "function"),
                              "owner": _get_tag_value(tags, "owner") }
 
                 if (public_dns_name := config.get("publicDnsName")):
@@ -150,7 +150,7 @@ class ElbDataMapper(DataMapper):
                  "authenticated_scan_planned": "Yes",
                  "is_public": "Yes" if config.get("scheme", "unknown") == "internet-facing" else "No",
                  "network_id": network_id,
-                 "iir_diagram_label": _get_tag_value(config_resource.get("tags", []), "iir_diagram_label"),
+                 "function": _get_tag_value(config_resource.get("tags", []), "function"),
                  "owner": _get_tag_value(config_resource.get("tags", []), "owner") }
 
         ip_addresses = self._get_ip_addresses(config.get("availabilityZones", []))
@@ -185,7 +185,7 @@ class RdsDataMapper(DataMapper):
                  "hardware_model": config.get("dBInstanceClass", ""),
                  "software_product_name": f"{config.get('engine', 'unknown')}-{config.get('engineVersion', 'unknown')}",
                  "network_id": network_id,
-                 "iir_diagram_label": _get_tag_value(config_resource.get("tags", []), "iir_diagram_label"),
+                 "function": _get_tag_value(config_resource.get("tags", []), "function"),
                  "owner": _get_tag_value(config_resource.get("tags", []), "owner") }
 
         return [InventoryData(**data)]
@@ -201,7 +201,7 @@ class DynamoDbTableDataMapper(DataMapper):
                  "is_public": "No",
                  "software_vendor": "AWS",
                  "software_product_name": "DynamoDB",
-                 "iir_diagram_label": _get_tag_value(config_resource.get("tags", []), "iir_diagram_label"),
+                 "function": _get_tag_value(config_resource.get("tags", []), "function"),
                  "owner": _get_tag_value(config_resource.get("tags", []), "owner") }
 
         return [InventoryData(**data)]
@@ -225,7 +225,7 @@ class LambdaDataMapper(DataMapper):
             "software_vendor": "AWS",
             "software_product_name": f"Lambda-{config.get('runtime', 'unknown')}",
             "hardware_model": f"{config.get('memorySize', 'unknown')}MB",
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -254,7 +254,7 @@ class S3DataMapper(DataMapper):
             "is_public": is_public,
             "software_vendor": "AWS",
             "software_product_name": "S3",
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -273,7 +273,7 @@ class EfsDataMapper(DataMapper):
             "is_public": "No",
             "software_vendor": "AWS",
             "software_product_name": "EFS",
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -296,7 +296,7 @@ class EksDataMapper(DataMapper):
             "network_id": resources_vpc.get("vpcId", ""),
             "software_vendor": "AWS",
             "software_product_name": f"EKS-{config.get('version', 'unknown')}",
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -321,7 +321,7 @@ class RedshiftDataMapper(DataMapper):
             "software_vendor": "AWS",
             "software_product_name": "Redshift",
             "hardware_model": config.get("nodeType", ""),
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -346,7 +346,7 @@ class ElastiCacheDataMapper(DataMapper):
             "software_vendor": "AWS",
             "software_product_name": f"ElastiCache-{engine}",
             "hardware_model": node_type,
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -374,7 +374,7 @@ class OpenSearchDataMapper(DataMapper):
             "network_id": vpc_id,
             "software_vendor": "AWS",
             "software_product_name": f"OpenSearch-{version}",
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -405,7 +405,7 @@ class ApiGatewayDataMapper(DataMapper):
             "is_public": is_public,
             "software_vendor": "AWS",
             "software_product_name": protocol_type,
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -426,7 +426,7 @@ class CloudFrontDataMapper(DataMapper):
             "is_public": "Yes",
             "software_vendor": "AWS",
             "software_product_name": "CloudFront",
-            "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+            "function": _get_tag_value(tags, "function"),
             "owner": _get_tag_value(tags, "owner")
         }
         return [InventoryData(**data)]
@@ -451,7 +451,7 @@ class NatGatewayDataMapper(DataMapper):
                     "is_virtual": "Yes",
                     "is_public": "Yes",
                     "network_id": config.get("vpcId", ""),
-                    "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                    "function": _get_tag_value(tags, "function"),
                     "owner": _get_tag_value(tags, "owner")
                 }
                 data_list.append(InventoryData(**data))
@@ -462,7 +462,7 @@ class NatGatewayDataMapper(DataMapper):
                 "is_virtual": "Yes",
                 "is_public": "Yes",
                 "network_id": config.get("vpcId", ""),
-                "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                "function": _get_tag_value(tags, "function"),
                 "owner": _get_tag_value(tags, "owner")
             }
             data_list.append(InventoryData(**data))
@@ -488,7 +488,7 @@ class NetworkInterfaceDataMapper(DataMapper):
                 "is_virtual": "Yes",
                 "mac_address": config.get("macAddress", ""),
                 "network_id": config.get("vpcId", ""),
-                "iir_diagram_label": _get_tag_value(tags, "iir_diagram_label"),
+                "function": _get_tag_value(tags, "function"),
                 "owner": _get_tag_value(tags, "owner")
             }
             

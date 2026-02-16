@@ -18,22 +18,22 @@ _workbook_template_file_name = os.path.join(_current_dir_name, "SSP-A13-FedRAMP-
 _workbook_output_file_path = os.path.join(tempfile.gettempdir(), "SSP-A13-FedRAMP-Integrated-Inventory.xlsx")
 DEFAULT_REPORT_WORKSHEET_FIRST_WRITEABLE_ROW_NUMBER = 3
 
-# FedRAMP template column mappings
-COL_UNIQUE_ID = 1
-COL_IP_ADDRESS = 2
-COL_IS_VIRTUAL = 3
-COL_IS_PUBLIC = 4
-COL_DNS_NAME = 5
-COL_MAC_ADDRESS = 7
-COL_AUTHENTICATED_SCAN = 8
-COL_BASELINE_CONFIG = 9
-COL_ASSET_TYPE = 12
-COL_HARDWARE_MODEL = 13
-COL_SOFTWARE_VENDOR = 15
-COL_SOFTWARE_PRODUCT = 16
-COL_IIR_DIAGRAM_LABEL = 18
-COL_NETWORK_ID = 21
-COL_OWNER = 22
+# FedRAMP template column mappings (REV 4)
+COL_UNIQUE_ID = 2
+COL_IP_ADDRESS = 3
+COL_IS_VIRTUAL = 4
+COL_IS_PUBLIC = 5
+COL_DNS_NAME = 6
+COL_MAC_ADDRESS = 8
+COL_AUTHENTICATED_SCAN = 9
+COL_BASELINE_CONFIG = 10
+COL_ASSET_TYPE = 13
+COL_HARDWARE_MODEL = 14
+COL_SOFTWARE_VENDOR = 16
+COL_SOFTWARE_PRODUCT = 17
+COL_FUNCTION = 19
+COL_NETWORK_ID = 22
+COL_OWNER = 23
 
 class CreateReportCommandHandler():
     def _write_cell_if_value_provided(self, worksheet: Worksheet, column:int, row: int, value: str):
@@ -71,7 +71,7 @@ class CreateReportCommandHandler():
             (COL_AUTHENTICATED_SCAN, 'authenticated_scan_planned'), (COL_BASELINE_CONFIG, 'baseline_config'),
             (COL_ASSET_TYPE, 'asset_type'), (COL_HARDWARE_MODEL, 'hardware_model'),
             (COL_SOFTWARE_VENDOR, 'software_vendor'), (COL_SOFTWARE_PRODUCT, 'software_product_name'),
-            (COL_IIR_DIAGRAM_LABEL, 'iir_diagram_label'), (COL_NETWORK_ID, 'network_id'), (COL_OWNER, 'owner')
+            (COL_FUNCTION, 'function'), (COL_NETWORK_ID, 'network_id'), (COL_OWNER, 'owner')
         ]
 
         for inventory_row in inventory:

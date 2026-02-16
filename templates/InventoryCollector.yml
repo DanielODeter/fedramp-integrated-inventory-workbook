@@ -39,6 +39,7 @@ Parameters:
 
 Resources:
 
+  # amazonq-ignore-next-line
   integratedinventorybucket:
     Type: AWS::S3::Bucket
     Properties: 
