@@ -470,11 +470,20 @@ class NatGatewayDataMapper(DataMapper):
         return data_list
 
 class NetworkInterfaceDataMapper(DataMapper):
+    # Skip ENIs owned/managed by AWS services — they create noise and are covered by their parent resource
+    _SKIP_INTERFACE_TYPES = {'lambda', 'vpc_endpoint', 'nat_gateway', 'ecs', 'eks', 'rds', 'elasticache', 'redshift'}
+
     def _get_supported_resource_type(self) -> List[str]:
         return ["AWS::EC2::NetworkInterface"]
 
     def _do_mapping(self, config_resource: dict) -> List[InventoryData]:
         config = config_resource.get("configuration", {})
+        interface_type = config.get("interfaceType", "").lower()
+        requester_managed = config.get("requesterManaged", False)
+
+        if requester_managed or interface_type in self._SKIP_INTERFACE_TYPES:
+            return []
+
         tags = config_resource.get("tags", [])
         private_ips = config.get("privateIpAddresses", [])
         

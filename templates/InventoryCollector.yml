@@ -89,6 +89,12 @@ Resources:
               Resource: 
                 - !Sub 'arn:${AWS::Partition}:s3:::integrated-inventory-reports-${AWS::AccountId}/*'
             - Effect: Allow
+              Action:
+                - "config:SelectResourceConfig"
+                - "config:GetResourceConfigHistory"
+                - "config:ListDiscoveredResources"
+              Resource: "*"
+            - Effect: Allow
               Action: "sts:AssumeRole"
               Resource: 
                 - !Sub 'arn:${AWS::Partition}:iam::${DomainAccountId}:role/InventoryCollector-for-Lambda'
@@ -101,7 +107,7 @@ Resources:
     Properties:
       FunctionName: InventoryCollector
       Handler: "inventory.handler.lambda_handler"
-      Runtime: "python3.8"
+      Runtime: "python3.11"
       Role: !GetAtt InventoryCollectorLambdaExecuteRole.Arn
       Timeout: 900
       Code:

@@ -47,7 +47,9 @@ def test_given_unsupported_resource_type_then_warning_is_logged(mock_logger):
                               .return_value = { "NextToken": None,
                                                 "Results": [ json.dumps({ "resourceType": "foobar" }) ] }
 
-    reader = AwsConfigInventoryReader(lambda_context=MagicMock(), sts_client=Mock(), mappers=[mock_mapper])
+    mock_lambda_context = Mock()
+    mock_lambda_context.invoked_function_arn = "arn:aws:lambda:us-east-1:123456789012:function:testing"
+    reader = AwsConfigInventoryReader(lambda_context=mock_lambda_context, sts_client=Mock(), mappers=[mock_mapper])
     reader._get_config_client = mock_config_client_factory
 
     all_inventory = reader.get_resources_from_all_accounts()
@@ -68,14 +70,16 @@ def test_given_error_from_boto_then_account_is_skipped_but_others_still_processe
     mock_config_client_factory.return_value \
                               .select_resource_config = mock_select_resource_config
 
-    reader = AwsConfigInventoryReader(lambda_context=MagicMock(), sts_client=Mock(), mappers=[mock_mapper])
+    mock_lambda_context = Mock()
+    mock_lambda_context.invoked_function_arn = "arn:aws:lambda:us-east-1:123456789012:function:testing"
+    reader = AwsConfigInventoryReader(lambda_context=mock_lambda_context, sts_client=Mock(), mappers=[mock_mapper])
     reader._get_config_client = mock_config_client_factory
     
     all_inventory = reader.get_resources_from_all_accounts()
 
     assert len(all_inventory) == 1, "inventory from the successful call should be returned"
     assert len(mock_select_resource_config.mock_calls) == 2, "boto should have been called twice to page through results"
-    mock_logger.error.assert_called_with(String() & Contains("moving onto next account"), ANY, ANY, exc_info=True)
+    mock_logger.error.assert_called_with(String() & Contains("returning empty results"), ANY, ANY, exc_info=True)
 
 def test_given_multiple_resource_pages_from_boto_then_reader_loops_through_all_pages():
     mock_mapper = Mock(spec=DataMapper)
@@ -88,7 +92,9 @@ def test_given_multiple_resource_pages_from_boto_then_reader_loops_through_all_p
     mock_config_client_factory.return_value \
                               .select_resource_config = mock_select_resource_config
 
-    readerx = AwsConfigInventoryReader(lambda_context=MagicMock(), sts_client=Mock(), mappers=[mock_mapper])
+    mock_lambda_context = Mock()
+    mock_lambda_context.invoked_function_arn = "arn:aws:lambda:us-east-1:123456789012:function:testing"
+    readerx = AwsConfigInventoryReader(lambda_context=mock_lambda_context, sts_client=Mock(), mappers=[mock_mapper])
     readerx._get_config_client = mock_config_client_factory
 
     all_inventory = readerx.get_resources_from_all_accounts()

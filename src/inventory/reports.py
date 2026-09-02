@@ -115,4 +115,10 @@ class DeliverReportCommandHandler():
 
         _logger.info(f"completed file upload")
 
-        return f"https://{target_bucket}.s3.amazonaws.com/{report_s3_key}"
+        return f"https://{target_bucket}.s3.{self._get_s3_endpoint_suffix()}/{report_s3_key}"
+
+    def _get_s3_endpoint_suffix(self) -> str:
+        region = os.environ.get('AWS_REGION', 'us-east-1')
+        if region.startswith('us-gov-'):
+            return f"{region}.amazonaws.com"
+        return "amazonaws.com"

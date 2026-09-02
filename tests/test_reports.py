@@ -22,6 +22,7 @@ from inventory.reports import CreateReportCommandHandler, DeliverReportCommandHa
 
 @patch('inventory.reports.load_workbook')
 def test_given_empty_inventory_list_then_report_is_still_written(mock_load_workbook):
+    mock_load_workbook.return_value.sheetnames = ["Inventory"]
     report_handler = CreateReportCommandHandler()
 
     report_handler.execute([])
